@@ -161,7 +161,7 @@ export const useProviders = () => {
     try {
       const { data, error } = await supabase
         .from('provider')
-        .select('id, city, state');
+        .select('id, city, state, email');
 
       if (error) throw error;
 

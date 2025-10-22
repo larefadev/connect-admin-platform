@@ -8,14 +8,13 @@ import emailNotificationService from '@/shared/application/services/emailNotific
 
 import { 
   B2BOrder, 
-  B2BOrderItem, 
   CreateB2BOrderRequest, 
   UpdateB2BOrderRequest,
   CartItem
 } from '@/core/orders/domain/entities/b2b-order';
 
 // Función para transformar los datos del pedido B2B al formato esperado por el endpoint de email
-const transformB2BOrderForEmail = (order: B2BOrder, storeProfile?: any, userEmail?: string) => {
+const transformB2BOrderForEmail = (order: B2BOrder, storeProfile?: { name?: string; phone?: string }, userEmail?: string) => {
   // Mapear priority_level de número a string
   const priorityLevelMap = {
     1: 'normal',
@@ -131,13 +130,22 @@ const useB2BCartStore = create<B2BCartStore>()(
   )
 );
 
-export const useB2BOrders = (storeId: number | undefined, ownerEmail?: string, storeProfile?: any, userEmail?: string, includeCart: boolean = false) => {
+export const useB2BOrders = (storeId: number | undefined, ownerEmail?: string, storeProfile?: { name?: string; phone?: string }, userEmail?: string, includeCart: boolean = false) => {
   const [orders, setOrders] = useState<B2BOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Usar el store de Zustand para el carrito solo si se necesita
-  const cartStore = includeCart ? useB2BCartStore() : null;
+  // Usar el store de Zustand para el carrito - siempre llamar el hook
+  const zustandCartStore = useB2BCartStore();
+  
+  // Usar el store real solo si se necesita, sino usar funciones vacías
+  const cartStore = includeCart ? zustandCartStore : {
+    cart: [],
+    addToCart: () => {},
+    updateCartItemQuantity: () => {},
+    removeFromCart: () => {},
+    clearCart: () => {}
+  };
 
   // Obtener todos los pedidos B2B de la tienda
   const fetchOrders = useCallback(async () => {
@@ -324,7 +332,7 @@ export const useB2BOrders = (storeId: number | undefined, ownerEmail?: string, s
     } finally {
       setLoading(false);
     }
-  }, [storeId, fetchOrderById]);
+  }, [storeId, fetchOrderById, ownerEmail, storeProfile, userEmail, cartStore]);
 
   // Actualizar un pedido
   const updateOrder = useCallback(async (id: string, updates: UpdateB2BOrderRequest): Promise<B2BOrder | null> => {
@@ -351,7 +359,7 @@ export const useB2BOrders = (storeId: number | undefined, ownerEmail?: string, s
         if (deleteError) throw deleteError;
 
         // Insertar nuevos items
-        const itemsWithOrderId = updates.items.map((item, index) => ({
+        const itemsWithOrderId = updates.items.map((item) => ({
           ...item,
           b2b_order_id: id,
           total_price: (item.quantity || 0) * (item.unit_price || 0) - (item.discount_amount || 0),
@@ -456,7 +464,7 @@ export const useB2BOrders = (storeId: number | undefined, ownerEmail?: string, s
         throw new Error('Pedido no encontrado o no pertenece a esta tienda');
       }
 
-      const updateData: any = { order_status: status };
+      const updateData: Partial<B2BOrder> & { order_status: B2BOrder['order_status'] } = { order_status: status };
       
       // Actualizar timestamps según el estado
       if (status === 'confirmed') {

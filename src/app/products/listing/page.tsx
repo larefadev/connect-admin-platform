@@ -12,16 +12,10 @@ import {
   Eye,
   Edit,
   Trash2,
-  Star,
   Package
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 
-function getStockColor(stock: number) {
-  if (stock === 0) return 'text-red-600';
-  if (stock < 20) return 'text-yellow-600';
-  return 'text-green-600';
-}
 
 function ActionMenu() {
   return (

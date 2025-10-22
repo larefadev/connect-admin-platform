@@ -15,7 +15,6 @@ import {
   DollarSign,
   Calendar,
   User,
-  MapPin,
   Clock
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';
@@ -159,7 +158,7 @@ function getPaymentStatusColor(status: string) {
   }
 }
 
-function ActionMenu({ order }: { order: any }) {
+function ActionMenu({ order }: { order: { id: string; status: string } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

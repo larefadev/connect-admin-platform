@@ -1,5 +1,5 @@
 import { BaseService } from "@/lib/api";
-import { B2BEmailNotificationPayload, B2BEmailOrderData, B2BOrder, EmailNotificationPayload } from "@/core/orders/domain/entities/b2b-order";
+import { B2BEmailNotificationPayload, B2BEmailOrderData, EmailNotificationPayload } from "@/core/orders/domain/entities/b2b-order";
 import { Order } from "@/core/orders";
 import { QuoteEmailData, QuoteEmailNotificationPayload } from "../entities/quote";
 
@@ -28,7 +28,7 @@ class EmailNotificationService extends BaseService {
             
             // Si es un error de red o servicio no disponible, no lanzar error
             if (error && typeof error === 'object' && 'response' in error) {
-                const httpError = error as any;
+                const httpError = error as { response?: { status: number } };
                 if (!httpError.response || httpError.response.status >= 500) {
                     // Error de servidor o red - no bloquear
                     return { success: false, message: 'Servicio de notificaciones temporalmente no disponible' };

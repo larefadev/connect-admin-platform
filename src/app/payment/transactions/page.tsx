@@ -148,7 +148,7 @@ function getTypeIcon(type: string) {
   }
 }
 
-function ActionMenu({ transaction }: { transaction: any }) {
+function ActionMenu({ transaction }: { transaction: { id: string; type: string; status: string } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

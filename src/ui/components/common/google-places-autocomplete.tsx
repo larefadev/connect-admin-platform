@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
 
 interface GooglePlacesAutocompleteProps {
   value: string;
@@ -10,9 +9,18 @@ interface GooglePlacesAutocompleteProps {
 }
 
 export interface PlaceResult {
-  address_components?: any[];
+  address_components?: Array<{
+    long_name: string;
+    short_name: string;
+    types: string[];
+  }>;
   formatted_address?: string;
-  geometry?: any;
+  geometry?: {
+    location: {
+      lat(): number;
+      lng(): number;
+    };
+  };
   name?: string;
 }
 
@@ -24,7 +32,7 @@ export interface GoogleAutocomplete {
 export interface GoogleMaps {
   maps: {
     places: {
-      Autocomplete: new (input: HTMLInputElement, options: any) => GoogleAutocomplete;
+      Autocomplete: new (input: HTMLInputElement, options: Record<string, unknown>) => GoogleAutocomplete;
     };
     event: {
       clearInstanceListeners: (autocomplete: GoogleAutocomplete) => void;
@@ -55,6 +63,34 @@ export const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> =
 
   useEffect(() => {
     const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
+    
+    const initAutocomplete = () => {
+      if (!inputRef.current) return;
+
+      try {
+        // Configurar el autocomplete con restricciones para México
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+          componentRestrictions: { country: 'mx' }, // Restringir a México
+          fields: ['address_components', 'formatted_address', 'geometry', 'name'],
+          types: ['address'] // Solo direcciones
+        }) as GoogleAutocomplete;
+
+        // Escuchar cuando se selecciona un lugar
+        autocompleteRef.current.addListener('place_changed', () => {
+          const place = autocompleteRef.current?.getPlace();
+          
+          if (place && place.formatted_address) {
+            onChange(place.formatted_address, place);
+          }
+        });
+
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error initializing autocomplete:', err);
+        setError('Error al inicializar el autocompletado');
+        setIsLoading(false);
+      }
+    };
     
     // Verificar si Google Maps ya está cargado
     if (window.google?.maps?.places) {
@@ -94,34 +130,7 @@ export const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> =
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, []);
-
-  const initAutocomplete = () => {
-    if (!inputRef.current) return;
-
-    try {
-      // Configurar el autocomplete con restricciones para México
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-        componentRestrictions: { country: 'mx' }, // Restringir a México
-        fields: ['address_components', 'formatted_address', 'geometry', 'name'],
-        types: ['address'] // Solo direcciones
-      }) as GoogleAutocomplete;
-
-      // Escuchar cuando se selecciona un lugar
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current?.getPlace();
-        
-        if (place && place.formatted_address) {
-          onChange(place.formatted_address, place);
-        }
-      });
-
-      setIsLoading(false);
-    } catch (err) {
-      setError('Error al inicializar el autocompletado');
-      setIsLoading(false);
-    }
-  };
+  }, [onChange]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);

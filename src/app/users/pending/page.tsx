@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
 import {
   Search,
@@ -11,10 +11,7 @@ import {
   Check,
   X,
   Clock,
-  User,
   Mail,
-  Phone,
-  MapPin,
   Calendar
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';

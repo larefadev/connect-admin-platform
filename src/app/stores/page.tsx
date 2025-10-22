@@ -146,7 +146,7 @@ function getStatusColor(status: string) {
   }
 }
 
-function ActionMenu({ store }: { store: any }) {
+function ActionMenu({ store }: { store: { id: number; name: string; status: string } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

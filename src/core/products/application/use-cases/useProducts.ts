@@ -53,7 +53,7 @@ export const useProducts = () => {
         throw error;
       }
 
-      const products = (productsData || []).slice(0, limit).map((p: any) => ({
+      const products = (productsData || []).slice(0, limit).map((p: Record<string, unknown>) => ({
         SKU: p.SKU || p.sku || '',
         name: p.name || '',
         price: p.price || 0,

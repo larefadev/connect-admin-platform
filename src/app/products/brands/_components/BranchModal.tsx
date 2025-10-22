@@ -173,7 +173,7 @@ export function BranchModal({
     const info: ExtractedAddressInfo = {};
     
     if (place.address_components) {
-      place.address_components.forEach((component: any) => {
+      place.address_components.forEach((component: { long_name: string; short_name: string; types: string[] }) => {
         const types = component.types;
         
         if (types.includes('locality') || types.includes('administrative_area_level_2')) {

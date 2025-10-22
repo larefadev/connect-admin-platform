@@ -212,7 +212,7 @@ export const useProviderBranches = (providerId?: bigint) => {
         .eq('is_main_branch', true);
 
       // Luego activar la nueva sucursal principal
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('provider_branches')
         .update({ 
           is_main_branch: true,

@@ -22,7 +22,9 @@ import {
   useProviderBranches,
   ProviderBranch,
   CreateProviderBranchData,
-  UpdateProviderBranchData
+  UpdateProviderBranchData,
+  UpdateProviderData,
+  CreateProviderData
 } from '@/core/providers';
 import { ProviderModal } from '../_components/ProviderModal';
 import { DeleteProviderModal } from '../_components/DeleteProviderModal';
@@ -92,10 +94,10 @@ export default function ProviderDetailsPage() {
     fetchProvider();
   }, [providerId, getProviderById, getBranchesByProvider, getBranchStats]);
 
-  const handleEdit = async (data: any) => {
+  const handleEdit = async (data: UpdateProviderData | CreateProviderData) => {
     setActionLoading(true);
     try {
-      const success = await updateProvider(data);
+      const success = await updateProvider(data as UpdateProviderData);
       if (success) {
         setProvider(prev => prev ? { ...prev, ...data } : null);
       }
