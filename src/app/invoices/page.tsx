@@ -2,24 +2,25 @@
 
 import { useState } from 'react';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
-import {
-  Search,
-  Filter,
-  Download,
-  Plus,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Send,
+import { 
+  Search, 
+  Filter, 
+  Download, 
+  Plus, 
+  MoreHorizontal, 
+  Eye, 
+  Edit, 
+  Trash2,
   FileText,
-  DollarSign,
   Calendar,
+  DollarSign,
   User,
-  Building2,
   CheckCircle,
   Clock,
   AlertCircle,
-  XCircle
+  XCircle,
+  Send,
+  Building2
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 
@@ -178,7 +179,7 @@ function getStatusIcon(status: string) {
   }
 }
 
-function ActionMenu({ invoice }: { invoice: any }) {
+function ActionMenu({ invoice }: { invoice: { id: string; invoiceNumber: string; status: string } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

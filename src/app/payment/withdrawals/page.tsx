@@ -188,7 +188,7 @@ function getStatusIcon(status: string) {
   }
 }
 
-function ActionMenu({ request }: { request: any }) {
+function ActionMenu({ request }: { request: { id: string; status: string; amount: number } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

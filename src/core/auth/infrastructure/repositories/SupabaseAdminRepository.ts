@@ -142,6 +142,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
     if (existsInPerson) {
       return {
         isValid: false,
+        isUnique: false,
         existsInPerson: true,
         existsInAdmins: false,
         message: 'Este correo ya está registrado como usuario regular. Los administradores deben usar un correo diferente.',
@@ -151,6 +152,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
     if (existsInAdmins) {
       return {
         isValid: false,
+        isUnique: false,
         existsInPerson: false,
         existsInAdmins: true,
         message: 'Este correo ya está registrado como administrador.',
@@ -159,6 +161,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
     return {
       isValid: true,
+      isUnique: true,
       existsInPerson: false,
       existsInAdmins: false,
       message: 'Correo disponible',

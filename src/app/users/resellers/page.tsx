@@ -7,63 +7,6 @@ import { useSeller } from '@/core/sellers/useSellers';
 import { Person } from '@/core/sellers/Entities/Person';
 
 
-const resellers = [
-  {
-    id: 1,
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+1 (555) 123-4567',
-    status: 'Activo',
-    joinDate: '2024-01-15',
-    totalSales: '$12,450',
-    commission: '15%',
-    location: 'New York, NY',
-  },
-  {
-    id: 2,
-    name: 'Sarah Johnson',
-    email: 'sarah.j@example.com',
-    phone: '+1 (555) 987-6543',
-    status: 'Activo',
-    joinDate: '2024-01-10',
-    totalSales: '$8,920',
-    commission: '12%',
-    location: 'Los Angeles, CA',
-  },
-  {
-    id: 3,
-    name: 'Mike Davis',
-    email: 'mike.davis@example.com',
-    phone: '+1 (555) 456-7890',
-    status: 'Inactivo',
-    joinDate: '2023-12-20',
-    totalSales: '$5,670',
-    commission: '10%',
-    location: 'Chicago, IL',
-  },
-  {
-    id: 4,
-    name: 'Emily Brown',
-    email: 'emily.brown@example.com',
-    phone: '+1 (555) 321-0987',
-    status: 'Pendiente',
-    joinDate: '2024-01-18',
-    totalSales: '$0',
-    commission: '15%',
-    location: 'Houston, TX',
-  },
-  {
-    id: 5,
-    name: 'David Wilson',
-    email: 'david.w@example.com',
-    phone: '+1 (555) 654-3210',
-    status: 'Activo',
-    joinDate: '2023-11-05',
-    totalSales: '$18,340',
-    commission: '18%',
-    location: 'Miami, FL',
-  },
-];
 
 export default function ResellersPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +31,6 @@ export default function ResellersPage() {
 
   // Calcular paginación
   const totalItems = filteredSellers.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedSellers = filteredSellers.slice(startIndex, endIndex);

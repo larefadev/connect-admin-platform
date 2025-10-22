@@ -163,10 +163,11 @@ export class MockUserRepository implements IUserRepository {
     return this.mockResellers[index];
   }
 
-  async suspendUser(id: string, _reason: string): Promise<User> {
+  async suspendUser(id: string, reason: string): Promise<User> {
     const index = this.mockResellers.findIndex(u => u.id === id);
     if (index === -1) throw new Error('User not found');
 
+    console.log(`Suspending user ${id} for reason: ${reason}`);
     this.mockResellers[index] = {
       ...this.mockResellers[index],
       status: UserStatus.SUSPENDED,

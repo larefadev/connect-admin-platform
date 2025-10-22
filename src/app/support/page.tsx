@@ -185,7 +185,7 @@ function getPriorityIcon(priority: string) {
   }
 }
 
-function ActionMenu({ ticket }: { ticket: any }) {
+function ActionMenu({ ticket }: { ticket: { id: string; title: string; status: string; priority: string } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

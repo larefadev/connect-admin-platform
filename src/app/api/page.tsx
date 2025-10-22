@@ -5,7 +5,6 @@ import DashboardLayout from '@/ui/layouts/DashboardLayout';
 import { 
   Search, 
   Filter, 
-  Download, 
   Plus, 
   MoreHorizontal, 
   Eye, 
@@ -186,7 +185,7 @@ function getEnvironmentColor(environment: string) {
   }
 }
 
-function ActionMenu({ apiKey }: { apiKey: any }) {
+function ActionMenu({ apiKey }: { apiKey: { id: string; name: string; status: string } }) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">

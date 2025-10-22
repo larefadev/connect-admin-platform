@@ -12,7 +12,6 @@ import { StatCard, RecentOrdersTable, TopProductsList } from './_components';
 import { useDashboardMetrics } from '@/core/dashboard';
 import { useProducts } from '@/core/products';
 import { useB2BOrders } from '@/core/orders/application/useOrdersB2B';
-import { useCustomers } from '@/core/users';
 
 export default function DashboardPage() {
   // Usar un storeId fijo para demo (en producción vendría del contexto de autenticación)

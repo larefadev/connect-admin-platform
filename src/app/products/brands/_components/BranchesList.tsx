@@ -15,7 +15,7 @@ import {
   PowerOff
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';
-import { ProviderBranch, CreateProviderBranchData, UpdateProviderBranchData } from '@/core/providers';
+import { ProviderBranch } from '@/core/providers';
 
 interface BranchesListProps {
   branches: ProviderBranch[];
@@ -158,7 +158,6 @@ export function BranchesList({
 
   const activeBranches = filteredBranches.filter(b => b.is_active);
   const inactiveBranches = filteredBranches.filter(b => !b.is_active);
-  const mainBranch = filteredBranches.find(b => b.is_main_branch);
 
   if (loading) {
     return (

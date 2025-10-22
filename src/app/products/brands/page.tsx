@@ -24,15 +24,6 @@ import { ProviderModal } from './_components/ProviderModal';
 import { DeleteProviderModal } from './_components/DeleteProviderModal';
 
 
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
 function ActionMenu({ 
   provider, 
   onEdit, 
