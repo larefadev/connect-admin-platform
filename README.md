@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Connect Admin Dashboard
+
+A modern, responsive admin dashboard for the Connect marketplace platform built with Next.js, TypeScript, and Tailwind CSS.
+
+## Features
+
+- **🎨 Modern UI Design** - Clean, professional interface based on provided design mockups
+- **📱 Responsive Layout** - Works seamlessly across desktop, tablet, and mobile devices
+- **🔐 Authentication** - Login page with form validation and password visibility toggle
+- **📊 Dashboard Overview** - Statistics cards, recent orders, and top products
+- **👥 User Management** - Reseller management with search, filtering, and actions
+- **📦 Product Catalogue** - Product listing with inventory management and filtering
+- **⚙️ Settings** - Comprehensive settings with profile, notifications, and security tabs
+- **🎯 Interactive Components** - Modals, dropdowns, and dynamic navigation
+
+## Tech Stack
+
+- **Framework**: Next.js 15.5.5 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4.0
+- **UI Components**: Headless UI
+- **Icons**: Lucide React
+- **Fonts**: Geist Sans & Geist Mono
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── dashboard/          # Main dashboard page
+│   ├── login/             # Authentication page
+│   ├── users/resellers/   # User management
+│   ├── products/listing/  # Product catalogue
+│   ├── settings/          # Settings page
+│   └── layout.tsx         # Root layout
+├── components/
+│   ├── DashboardLayout.tsx # Main layout wrapper
+│   ├── Sidebar.tsx        # Navigation sidebar
+│   ├── Header.tsx         # Top header
+│   └── Modal.tsx          # Modal component
+└── public/desing/         # Design mockups
+```
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Open your browser** and navigate to [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Dashboard** (`/dashboard`) - Main overview with statistics and recent activity
+- **Login** (`/login`) - Authentication page
+- **User Management** (`/users/resellers`) - Reseller management interface
+- **Product Catalogue** (`/products/listing`) - Product inventory management
+- **Settings** (`/settings`) - User preferences and configuration
 
-## Learn More
+## Key Components
 
-To learn more about Next.js, take a look at the following resources:
+### Sidebar Navigation
+- Collapsible menu items with icons
+- Active state highlighting
+- User profile section
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Dashboard Cards
+- Statistics overview with trend indicators
+- Recent orders table
+- Top products listing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Data Tables
+- Search and filtering capabilities
+- Pagination support
+- Action menus for each row
+- Status indicators with color coding
 
-## Deploy on Vercel
+### Settings Interface
+- Tabbed navigation
+- Form validation
+- Toggle switches for preferences
+- Password management with visibility controls
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Design System
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The UI follows a consistent design system with:
+- **Colors**: Blue primary (#3B82F6), with semantic colors for status
+- **Typography**: Geist font family with consistent sizing
+- **Spacing**: Tailwind's spacing scale for consistent layouts
+- **Components**: Reusable components with consistent styling
+
+## Development
+
+- **Hot Reload**: Changes are reflected immediately during development
+- **TypeScript**: Full type safety throughout the application
+- **ESLint**: Code linting for consistency
+- **Responsive**: Mobile-first responsive design
+
+## Future Enhancements
+
+- API integration for real data
+- Authentication system implementation
+- Advanced filtering and sorting
+- Data export functionality
+- Real-time notifications
+- Dark mode support
