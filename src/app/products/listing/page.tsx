@@ -2,6 +2,12 @@
 import { useState } from 'react';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
 import { useProducts } from '@/core/products/application/use-cases/useProducts';
+import CreateProductModal from '@/shared/components/modals/CreateProductModal';
+import BulkStockUpdateModal from '@/shared/components/modals/BulkStockUpdateModal';
+import BulkImportModal from '@/shared/components/modals/BulkImportModal';
+import EditProductModal from '@/shared/components/modals/EditProductModal';
+import UpdateInventoryModal from '@/shared/components/modals/UpdateInventoryModal';
+import { useRouter } from 'next/navigation';
 
 import {
   Search,
@@ -12,21 +18,31 @@ import {
   Eye,
   Edit,
   Trash2,
-  Package
+  Package,
+  Upload
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 
 
-function ActionMenu() {
+interface ActionMenuProps {
+  product: any;
+  onEdit: (product: any) => void;
+  onViewDetails: (product: any) => void;
+  onUpdateInventory: (product: any) => void;
+  onDelete: (product: any) => void;
+}
+
+function ActionMenu({ product, onEdit, onViewDetails, onUpdateInventory, onDelete }: ActionMenuProps) {
   return (
     <Menu as="div" className="relative">
       <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">
         <MoreHorizontal className="h-4 w-4 text-gray-500" />
       </Menu.Button>
-      <Menu.Items className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+      <Menu.Items className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
         <Menu.Item>
           {({ active }) => (
             <button
+              onClick={() => onViewDetails(product)}
               className={`w-full flex items-center px-4 py-2 text-sm ${
                 active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
               }`}
@@ -39,6 +55,7 @@ function ActionMenu() {
         <Menu.Item>
           {({ active }) => (
             <button
+              onClick={() => onEdit(product)}
               className={`w-full flex items-center px-4 py-2 text-sm ${
                 active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
               }`}
@@ -51,24 +68,27 @@ function ActionMenu() {
         <Menu.Item>
           {({ active }) => (
             <button
+              onClick={() => onUpdateInventory(product)}
               className={`w-full flex items-center px-4 py-2 text-sm ${
                 active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
               }`}
             >
               <Package className="h-4 w-4 mr-2" />
-              Actualizar Stock
+              Actualizar Inventario
             </button>
           )}
         </Menu.Item>
+        <div className="border-t border-gray-100 my-1"></div>
         <Menu.Item>
           {({ active }) => (
             <button
+              onClick={() => onDelete(product)}
               className={`w-full flex items-center px-4 py-2 text-sm ${
-                active ? 'bg-gray-50 text-red-600' : 'text-red-600'
+                active ? 'bg-red-50 text-red-600' : 'text-red-600'
               }`}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Eliminar
+              Eliminar Producto
             </button>
           )}
         </Menu.Item>
@@ -81,9 +101,217 @@ export default function ProductListingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todas');
   const [statusFilter, setStatusFilter] = useState('Todos');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isStockUpdateModalOpen, setIsStockUpdateModalOpen] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  
+  const router = useRouter();
   
   // Hook calls must be inside the component
-  const { products, loading, error } = useProducts();
+  const { products, loading, error, createProduct } = useProducts();
+
+  // Handle product edit
+  const handleEditProduct = (product: any) => {
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle view product details
+  const handleViewDetails = (product: any) => {
+    router.push(`/products/${product.SKU}`);
+  };
+
+  // Handle update inventory
+  const handleUpdateInventory = (product: any) => {
+    setSelectedProduct(product);
+    setIsInventoryModalOpen(true);
+  };
+
+  // Handle delete product
+  const handleDeleteProduct = (product: any) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar el producto "${product.name}"?\n\nEsta acción no se puede deshacer.`)) {
+      console.log('🗑️ Eliminando producto:', product.SKU);
+      
+      // TODO: Implement actual Supabase delete operation
+      // await supabase
+      //   .from('products_test')
+      //   .delete()
+      //   .eq('SKU', product.SKU);
+      
+      // Also delete related inventory
+      // await supabase
+      //   .from('inventory')
+      //   .delete()
+      //   .eq('product_sku', product.SKU);
+      
+      alert('Producto eliminado exitosamente');
+    }
+  };
+
+  // Handle product update
+  const handleUpdateProduct = async (productData: any) => {
+    console.log('🔄 Actualizando producto:', productData);
+    
+    try {
+      // TODO: Implement actual Supabase update operation
+      // await supabase
+      //   .from('products_test')
+      //   .update({
+      //     name: productData.name,
+      //     description: productData.description,
+      //     price: productData.price,
+      //     image: productData.image,
+      //     category: productData.category,
+      //     brand: productData.brand,
+      //     brand_code: productData.brand_code,
+      //     provider: productData.provider,
+      //     provider_id: productData.provider_id
+      //   })
+      //   .eq('SKU', productData.SKU);
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log('✅ Producto actualizado exitosamente');
+      
+      // Close modal and clear selection
+      setIsEditModalOpen(false);
+      setSelectedProduct(null);
+      
+    } catch (error) {
+      console.error('❌ Error actualizando producto:', error);
+      throw error;
+    }
+  };
+
+  // Handle inventory update for single product
+  const handleInventoryUpdate = async (inventoryEntries: any[]) => {
+    console.log('🔄 Actualizando inventario del producto:', inventoryEntries);
+    
+    try {
+      // Import Supabase client
+      const { default: supabase } = await import('@/lib/Supabase');
+      
+      for (const entry of inventoryEntries) {
+        console.log(`Actualizando inventario: ${entry.product_sku} en sucursal ${entry.provider_branch_id}: ${entry.stock} unidades`);
+        
+        if (entry.id) {
+          // Update existing entry
+          const { error } = await supabase
+            .from('inventory')
+            .update({
+              stock: entry.stock,
+              reserved_stock: entry.reserved_stock || 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', entry.id);
+            
+          if (error) {
+            console.error('Error updating inventory entry:', error);
+            throw new Error(`Error actualizando inventario: ${error.message}`);
+          }
+        } else {
+          // Insert new entry
+          const { error } = await supabase
+            .from('inventory')
+            .insert({
+              product_sku: entry.product_sku,
+              provider_branch_id: entry.provider_branch_id,
+              stock: entry.stock,
+              reserved_stock: entry.reserved_stock || 0
+            });
+            
+          if (error) {
+            console.error('Error inserting inventory entry:', error);
+            throw new Error(`Error creando inventario: ${error.message}`);
+          }
+        }
+      }
+      
+      console.log('✅ Inventario actualizado exitosamente');
+      
+      // Close modal and clear selection
+      setIsInventoryModalOpen(false);
+      setSelectedProduct(null);
+      
+    } catch (error) {
+      console.error('❌ Error actualizando inventario:', error);
+      throw error;
+    }
+  };
+
+  // Handle bulk stock update
+  const handleBulkStockUpdate = async (updates: { product_sku: string; provider_branch_id: number; stock: number; reserved_stock?: number }[]) => {
+    console.log('🔄 Actualizando stock masivamente:', updates);
+    
+    try {
+      // TODO: Implement actual Supabase operations
+      // For each update, either INSERT or UPDATE in inventory table
+      for (const update of updates) {
+        console.log(`Actualizando ${update.product_sku} en sucursal ${update.provider_branch_id}: ${update.stock} unidades`);
+        
+        // Example Supabase operation (to be implemented):
+        // await supabase
+        //   .from('inventory')
+        //   .upsert({
+        //     product_sku: update.product_sku,
+        //     provider_branch_id: update.provider_branch_id,
+        //     stock: update.stock,
+        //     reserved_stock: update.reserved_stock || 0,
+        //     updated_at: new Date().toISOString()
+        //   }, { 
+        //     onConflict: 'product_sku,provider_branch_id' 
+        //   });
+      }
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('✅ Stock actualizado exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error actualizando stock:', error);
+      throw error;
+    }
+  };
+
+  // Handle bulk import
+  const handleBulkImport = async (products: any[]) => {
+    console.log('🔄 Importando productos masivamente:', products);
+    
+    try {
+      // TODO: Implement actual Supabase operations
+      // Insert products into products_test table
+      for (const product of products) {
+        console.log(`Importando producto: ${product.SKU} - ${product.name}`);
+        
+        // Example Supabase operation (to be implemented):
+        // await supabase
+        //   .from('products_test')
+        //   .insert({
+        //     "SKU": product.SKU,
+        //     name: product.name,
+        //     description: product.description,
+        //     price: product.price,
+        //     image: product.image,
+        //     category: product.category,
+        //     brand: product.brand,
+        //     brand_code: product.brand_code,
+        //     provider: product.provider,
+        //     provider_id: product.provider_id
+        //   });
+      }
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('✅ Productos importados exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error importando productos:', error);
+      throw error;
+    }
+  };
 
   // Handle loading state
   if (loading) {
@@ -116,10 +344,29 @@ export default function ProductListingPage() {
             <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
             <p className="text-gray-600 mt-1">Gestiona tu inventario de productos</p>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar Producto
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Producto
+            </button>
+            <button 
+              onClick={() => setIsStockUpdateModalOpen(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Actualizar Stock
+            </button>
+            <button 
+              onClick={() => setIsBulkImportModalOpen(true)}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Carga Masiva
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -258,7 +505,13 @@ export default function ProductListingPage() {
                       {product.provider || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <ActionMenu />
+                      <ActionMenu 
+                        product={product} 
+                        onEdit={handleEditProduct}
+                        onViewDetails={handleViewDetails}
+                        onUpdateInventory={handleUpdateInventory}
+                        onDelete={handleDeleteProduct}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -300,6 +553,49 @@ export default function ProductListingPage() {
           </div>
         </div>
       </div>
+
+      {/* Create Product Modal */}
+      <CreateProductModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={createProduct}
+      />
+
+      {/* Bulk Stock Update Modal */}
+      <BulkStockUpdateModal
+        isOpen={isStockUpdateModalOpen}
+        onClose={() => setIsStockUpdateModalOpen(false)}
+        onUpdate={handleBulkStockUpdate}
+      />
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isBulkImportModalOpen}
+        onClose={() => setIsBulkImportModalOpen(false)}
+        onImport={handleBulkImport}
+      />
+
+      {/* Edit Product Modal */}
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onSubmit={handleUpdateProduct}
+        product={selectedProduct}
+      />
+
+      {/* Update Inventory Modal */}
+      <UpdateInventoryModal
+        isOpen={isInventoryModalOpen}
+        onClose={() => {
+          setIsInventoryModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onUpdate={handleInventoryUpdate}
+        product={selectedProduct}
+      />
     </DashboardLayout>
   );
 }
