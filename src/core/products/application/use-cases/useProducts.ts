@@ -12,6 +12,7 @@ export interface Product {
   category?: string;
   provider?: string;
   provider_id?: number;
+  [key: string]: unknown;
 }
 
 export interface ProductStats {
@@ -132,11 +133,48 @@ export const useProducts = () => {
     loadProducts();
   }, [loadProducts]);
 
+  // Crear producto
+  const createProduct = useCallback(async (productData: Omit<Product, 'SKU'> & { SKU?: string }): Promise<void> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('🔄 Creando producto:', productData);
+      
+      // For now, we'll simulate the creation since we don't have the full backend implementation
+      // In a real implementation, this would call the Supabase API
+      const newProduct: Product = {
+        SKU: productData.SKU || `SKU-${Date.now()}`,
+        name: productData.name as string,
+        price: productData.price as number,
+        image: productData.image as string | undefined,
+        brand: productData.brand as string | undefined,
+        brand_code: productData.brand_code as string | undefined,
+        description: productData.description as string | undefined,
+        category: productData.category as string | undefined,
+        provider: productData.provider as string | undefined,
+        provider_id: productData.provider_id as number | undefined
+      };
+
+      // Add to local state (in a real app, this would be handled by the backend)
+      setProducts(prev => [newProduct, ...prev]);
+      
+      console.log('✅ Producto creado exitosamente');
+    } catch (err) {
+      console.error('❌ Error al crear producto:', err);
+      setError(err instanceof Error ? err.message : 'Error al crear producto');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     products,
     loading,
     error,
     loadProducts,
     getProductStats,
+    createProduct,
   };
 };

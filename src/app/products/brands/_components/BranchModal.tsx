@@ -39,7 +39,7 @@ export function BranchModal({
   branch,
   providerId,
   onSave,
-  isLoading = false
+  isLoading: _ = false
 }: BranchModalProps) {
   const [formData, setFormData] = useState<FormData>({
     branch_name: '',

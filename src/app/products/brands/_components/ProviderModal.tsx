@@ -37,7 +37,7 @@ export function ProviderModal({
   onClose,
   provider,
   onSave,
-  isLoading = false
+  isLoading: _ = false
 }: ProviderModalProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',
