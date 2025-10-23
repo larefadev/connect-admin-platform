@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import Modal from '../ui/Modal';
 import { Product } from '@/core/products/application/use-cases/useProducts';
 import { brandAutoParts } from '@/app/products/helpers/brands';
@@ -60,7 +61,7 @@ export default function CreateProductModal({ isOpen, onClose, onSubmit }: Create
     if (isOpen && providers.length === 0) {
       loadProviders();
     }
-  }, [isOpen]);
+  }, [isOpen, providers.length]);
 
   // Load providers from Supabase
   const loadProviders = async () => {
@@ -606,9 +607,11 @@ Compatibilidades:
             <div className="flex items-center">
               <div className="h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                 {formData.image ? (
-                  <img 
+                  <Image 
                     src={formData.image} 
                     alt={formData.name}
+                    width={48}
+                    height={48}
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;

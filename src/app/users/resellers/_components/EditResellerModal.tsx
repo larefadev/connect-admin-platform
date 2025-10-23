@@ -24,7 +24,7 @@ export function EditResellerModal({
   onClose,
   reseller,
   onSave,
-  isLoading = false
+  isLoading: _ = false
 }: EditResellerModalProps) {
   const [formData, setFormData] = useState<FormData>({
     name: '',

@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
 import supabase from '@/lib/Supabase';
 import { 
@@ -52,13 +53,7 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    if (sku) {
-      loadProductData();
-    }
-  }, [sku]);
-
-  const loadProductData = async () => {
+  const loadProductData = useCallback(async () => {
     setIsLoading(true);
     setError('');
 
@@ -100,7 +95,18 @@ export default function ProductDetailPage() {
       }
 
       // Transform inventory data
-      const inventory: InventoryItem[] = inventoryData?.map((item: any) => ({
+      const inventory: InventoryItem[] = inventoryData?.map((item: {
+        id: number;
+        provider_branch_id: number;
+        stock: number;
+        reserved_stock: number;
+        updated_at: string;
+        provider_branches?: {
+          branch_name?: string;
+          city?: string;
+          provider?: { name?: string };
+        };
+      }) => ({
         id: item.id,
         provider_branch_id: item.provider_branch_id,
         branch_name: item.provider_branches?.branch_name || 'Sin nombre',
@@ -123,7 +129,13 @@ export default function ProductDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sku]);
+
+  useEffect(() => {
+    if (sku) {
+      loadProductData();
+    }
+  }, [sku, loadProductData]);
 
   const handleEdit = () => {
     // TODO: Open edit modal or navigate to edit page
@@ -335,9 +347,11 @@ export default function ProductDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Imagen</h3>
               {product.image ? (
-                <img
+                <Image
                   src={product.image}
                   alt={product.name}
+                  width={400}
+                  height={300}
                   className="w-full h-48 object-cover rounded-lg"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Sin+Imagen';

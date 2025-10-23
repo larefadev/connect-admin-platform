@@ -8,7 +8,12 @@ interface UpdateInventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (inventoryUpdates: InventoryEntry[]) => Promise<void>;
-  product: any;
+  product: {
+    SKU: string;
+    name: string;
+    price?: number;
+    [key: string]: unknown;
+  };
 }
 
 interface InventoryEntry {
@@ -36,14 +41,7 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>('');
 
-  // Load existing inventory and available branches when modal opens
-  useEffect(() => {
-    if (isOpen && product) {
-      loadInventoryData();
-    }
-  }, [isOpen, product]);
-
-  const loadInventoryData = async () => {
+  const loadInventoryData = useCallback(async () => {
     setIsLoading(true);
     setError('');
     
@@ -66,7 +64,17 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
       }
 
       // Transform inventory data
-      const inventoryEntries: InventoryEntry[] = inventoryData?.map((item: any) => ({
+      const inventoryEntries: InventoryEntry[] = inventoryData?.map((item: {
+        id: number;
+        product_sku: string;
+        provider_branch_id: number;
+        stock: number;
+        reserved_stock: number;
+        provider_branches?: {
+          branch_name?: string;
+          city?: string;
+        };
+      }) => ({
         id: item.id,
         product_sku: item.product_sku,
         provider_branch_id: item.provider_branch_id,
@@ -96,12 +104,12 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
       }
 
       // Transform branches data
-      const branches: ProviderBranch[] = branchesData?.map((branch: any) => ({
-        id: branch.id,
-        provider_id: branch.provider_id,
-        branch_name: branch.branch_name,
-        city: branch.city,
-        provider_name: branch.provider?.name || 'Sin nombre'
+      const branches: ProviderBranch[] = branchesData?.map((branch: Record<string, unknown>) => ({
+        id: branch.id as number,
+        provider_id: branch.provider_id as number,
+        branch_name: branch.branch_name as string,
+        city: branch.city as string,
+        provider_name: (branch.provider as { name?: string })?.name || 'Sin nombre'
       })) || [];
 
       setInventoryEntries(inventoryEntries);
@@ -113,7 +121,14 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [product]);
+
+  // Load existing inventory and available branches when modal opens
+  useEffect(() => {
+    if (isOpen && product) {
+      loadInventoryData();
+    }
+  }, [isOpen, product, loadInventoryData]);
 
   const addNewEntry = () => {
     const newEntry: InventoryEntry = {
@@ -126,7 +141,7 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
     setInventoryEntries(prev => [...prev, newEntry]);
   };
 
-  const updateEntry = (index: number, field: keyof InventoryEntry, value: any) => {
+  const updateEntry = (index: number, field: keyof InventoryEntry, value: string | number) => {
     setInventoryEntries(prev => prev.map((entry, i) => {
       if (i === index) {
         const updated = { ...entry, [field]: value };
@@ -223,7 +238,7 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
             <Package className="h-5 w-5 text-gray-400 mr-2" />
             <div>
               <h4 className="text-sm font-medium text-gray-900">{product.name}</h4>
-              <p className="text-sm text-gray-500">SKU: {product.SKU} | Precio: ${product.price?.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+              <p className="text-sm text-gray-500">SKU: {product.SKU} | Precio: ${typeof product.price === 'number' ? product.price.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -251,7 +266,7 @@ export default function UpdateInventoryModal({ isOpen, onClose, onUpdate, produc
               <div className="text-center py-8 text-gray-500">
                 <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>No hay inventario registrado para este producto</p>
-                <p className="text-sm">Haz clic en "Agregar Sucursal" para comenzar</p>
+                <p className="text-sm">Haz clic en &quot;Agregar Sucursal&quot; para comenzar</p>
               </div>
             ) : (
               <div className="space-y-3">

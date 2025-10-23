@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback } from 'react';
 import Modal from '../ui/Modal';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface BulkStockUpdateModalProps {
   isOpen: boolean;

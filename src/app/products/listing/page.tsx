@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
+import Image from 'next/image';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
-import { useProducts } from '@/core/products/application/use-cases/useProducts';
+import { useProducts, type Product } from '@/core/products/application/use-cases/useProducts';
 import CreateProductModal from '@/shared/components/modals/CreateProductModal';
 import BulkStockUpdateModal from '@/shared/components/modals/BulkStockUpdateModal';
 import BulkImportModal from '@/shared/components/modals/BulkImportModal';
@@ -23,13 +24,22 @@ import {
 } from 'lucide-react';
 import { Menu } from '@headlessui/react';
 
+// Product interface imported from useProducts hook
+
+interface InventoryEntry {
+  id?: number;
+  product_sku: string;
+  provider_branch_id: number;
+  stock: number;
+  reserved_stock?: number;
+}
 
 interface ActionMenuProps {
-  product: any;
-  onEdit: (product: any) => void;
-  onViewDetails: (product: any) => void;
-  onUpdateInventory: (product: any) => void;
-  onDelete: (product: any) => void;
+  product: Product;
+  onEdit: (product: Product) => void;
+  onViewDetails: (product: Product) => void;
+  onUpdateInventory: (product: Product) => void;
+  onDelete: (product: Product) => void;
 }
 
 function ActionMenu({ product, onEdit, onViewDetails, onUpdateInventory, onDelete }: ActionMenuProps) {
@@ -106,7 +116,7 @@ export default function ProductListingPage() {
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   const router = useRouter();
   
@@ -114,24 +124,24 @@ export default function ProductListingPage() {
   const { products, loading, error, createProduct } = useProducts();
 
   // Handle product edit
-  const handleEditProduct = (product: any) => {
+  const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
 
   // Handle view product details
-  const handleViewDetails = (product: any) => {
+  const handleViewDetails = (product: Product) => {
     router.push(`/products/${product.SKU}`);
   };
 
   // Handle update inventory
-  const handleUpdateInventory = (product: any) => {
+  const handleUpdateInventory = (product: Product) => {
     setSelectedProduct(product);
     setIsInventoryModalOpen(true);
   };
 
   // Handle delete product
-  const handleDeleteProduct = (product: any) => {
+  const handleDeleteProduct = (product: Product) => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar el producto "${product.name}"?\n\nEsta acción no se puede deshacer.`)) {
       console.log('🗑️ Eliminando producto:', product.SKU);
       
@@ -152,7 +162,7 @@ export default function ProductListingPage() {
   };
 
   // Handle product update
-  const handleUpdateProduct = async (productData: any) => {
+  const handleUpdateProduct = async (productData: Product) => {
     console.log('🔄 Actualizando producto:', productData);
     
     try {
@@ -187,7 +197,7 @@ export default function ProductListingPage() {
   };
 
   // Handle inventory update for single product
-  const handleInventoryUpdate = async (inventoryEntries: any[]) => {
+  const handleInventoryUpdate = async (inventoryEntries: InventoryEntry[]) => {
     console.log('🔄 Actualizando inventario del producto:', inventoryEntries);
     
     try {
@@ -277,7 +287,7 @@ export default function ProductListingPage() {
   };
 
   // Handle bulk import
-  const handleBulkImport = async (products: any[]) => {
+  const handleBulkImport = async (products: Product[]) => {
     console.log('🔄 Importando productos masivamente:', products);
     
     try {
@@ -468,9 +478,11 @@ export default function ProductListingPage() {
                       <div className="flex items-center">
                         <div className="h-12 w-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                           {product.image ? (
-                            <img 
+                            <Image 
                               src={product.image} 
                               alt={product.name}
+                              width={48}
+                              height={48}
                               className="h-full w-full object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
@@ -587,15 +599,17 @@ export default function ProductListingPage() {
       />
 
       {/* Update Inventory Modal */}
-      <UpdateInventoryModal
-        isOpen={isInventoryModalOpen}
-        onClose={() => {
-          setIsInventoryModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onUpdate={handleInventoryUpdate}
-        product={selectedProduct}
-      />
+      {selectedProduct && (
+        <UpdateInventoryModal
+          isOpen={isInventoryModalOpen}
+          onClose={() => {
+            setIsInventoryModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onUpdate={handleInventoryUpdate}
+          product={selectedProduct}
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -12,6 +12,7 @@ export interface Product {
   category?: string;
   provider?: string;
   provider_id?: number;
+  [key: string]: unknown;
 }
 
 export interface ProductStats {
@@ -144,15 +145,15 @@ export const useProducts = () => {
       // In a real implementation, this would call the Supabase API
       const newProduct: Product = {
         SKU: productData.SKU || `SKU-${Date.now()}`,
-        name: productData.name,
-        price: productData.price,
-        image: productData.image,
-        brand: productData.brand,
-        brand_code: productData.brand_code,
-        description: productData.description,
-        category: productData.category,
-        provider: productData.provider,
-        provider_id: productData.provider_id
+        name: productData.name as string,
+        price: productData.price as number,
+        image: productData.image as string | undefined,
+        brand: productData.brand as string | undefined,
+        brand_code: productData.brand_code as string | undefined,
+        description: productData.description as string | undefined,
+        category: productData.category as string | undefined,
+        provider: productData.provider as string | undefined,
+        provider_id: productData.provider_id as number | undefined
       };
 
       // Add to local state (in a real app, this would be handled by the backend)

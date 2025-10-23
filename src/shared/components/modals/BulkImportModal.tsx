@@ -20,6 +20,7 @@ interface ProductImport {
   brand_code?: string;
   provider?: string;
   provider_id?: number;
+  [key: string]: unknown;
 }
 
 interface ProcessedFile {
@@ -122,7 +123,7 @@ export default function BulkImportModal({ isOpen, onClose, onImport }: BulkImpor
           continue;
         }
 
-        const product: any = {};
+        const product: Record<string, string | number | undefined> = {};
         let hasError = false;
 
         for (let j = 0; j < headers.length; j++) {

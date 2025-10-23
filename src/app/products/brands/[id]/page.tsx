@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -106,7 +106,7 @@ export default function ProviderDetailsPage() {
   };
 
   // Load provider products from products_test table with pagination
-  const loadProviderProducts = async (providerId: string, page: number = 1) => {
+  const loadProviderProducts = useCallback(async (providerId: string, page: number = 1) => {
     console.log('Loading products for provider:', providerId, 'page:', page);
     setProductsLoading(true);
     try {
@@ -154,7 +154,7 @@ export default function ProviderDetailsPage() {
       console.log('Products loading finished');
       setProductsLoading(false);
     }
-  };
+  }, [productsPerPage]);
 
   useEffect(() => {
     const fetchProvider = async () => {
@@ -183,7 +183,7 @@ export default function ProviderDetailsPage() {
     };
 
     fetchProvider();
-  }, [providerId, getProviderById, getBranchesByProvider, getBranchStats]);
+  }, [providerId, getProviderById, getBranchesByProvider, getBranchStats, loadProviderProducts]);
 
   // Pagination handlers
   const totalPages = Math.ceil(totalProducts / productsPerPage);
