@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import supabase from '@/lib/Supabase';
-import emailNotificationService from '@/shared/application/services/emailNotification.service';
+import emailNotificationService from '@/shared/services/emailNotification.service';
 
 
 

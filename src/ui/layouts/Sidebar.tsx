@@ -38,30 +38,30 @@ interface MenuItemType {
 
 const mainMenuItems: MenuItemType[] = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Panel de Control', href: '/dashboard' },
-  { id: 'users', icon: Users, label: 'Gestión de Usuarios', href: '/users/resellers', children: [
-    { name: 'Revendedores', href: '/users/resellers' },
-    { name: 'Solicitudes Pendientes', href: '/users/pending' },
+  { id: 'users', icon: Users, label: 'Gestión de Usuarios', href: '/dashboard/users/resellers', children: [
+    { name: 'Revendedores', href: '/dashboard/users/resellers' },
+    { name: 'Solicitudes Pendientes', href: '/dashboard/users/pending' },
   ]},
-  { id: 'products', icon: Package, label: 'Catálogo', href: '/products/listing', children: [
-    { name: 'Productos', href: '/products/listing' },
-    { name: 'Proveedores', href: '/products/brands' },
+  { id: 'products', icon: Package, label: 'Catálogo', href: '/dashboard/products/listing', children: [
+    { name: 'Productos', href: '/dashboard/products/listing' },
+    { name: 'Proveedores', href: '/dashboard/products/brands' },
   ]},
-  { id: 'orders', icon: ShoppingCart, label: 'Pedidos', href: '/orders' },
-  { id: 'stores', icon: Store, label: 'Gestión de Tiendas', href: '/stores' },
+  { id: 'orders', icon: ShoppingCart, label: 'Pedidos', href: '/dashboard/orders' },
+  { id: 'stores', icon: Store, label: 'Gestión de Tiendas', href: '/dashboard/stores' },
 ];
 
 const businessMenuItems: MenuItemType[] = [
-  { id: 'payment', icon: CreditCard, label: 'Pagos', href: '/payment/transactions', children: [
-    { name: 'Historial de Transacciones', href: '/payment/transactions' },
-    { name: 'Solicitudes de Retiro', href: '/payment/withdrawals' },
+  { id: 'payment', icon: CreditCard, label: 'Pagos', href: '/dashboard/payment/transactions', children: [
+    { name: 'Historial de Transacciones', href: '/dashboard/payment/transactions' },
+    { name: 'Solicitudes de Retiro', href: '/dashboard/payment/withdrawals' },
   ]},
-  { id: 'invoices', icon: FileText, label: 'Facturas', href: '/invoices' },
-  { id: 'api', icon: BarChart3, label: 'Integración API', href: '/api' },
+  { id: 'invoices', icon: FileText, label: 'Facturas', href: '/dashboard/invoices' },
+  { id: 'api', icon: BarChart3, label: 'Integración API', href: '/dashboard/api' },
 ];
 
 const supportMenuItems: MenuItemType[] = [
-  { id: 'support', icon: HelpCircle, label: 'Soporte y Tickets', href: '/support' },
-  { id: 'settings', icon: Settings, label: 'Configuración', href: '/settings' },
+  { id: 'support', icon: HelpCircle, label: 'Soporte y Tickets', href: '/dashboard/support' },
+  { id: 'settings', icon: Settings, label: 'Configuración', href: '/dashboard/settings' },
 ];
 
 interface SidebarProps {

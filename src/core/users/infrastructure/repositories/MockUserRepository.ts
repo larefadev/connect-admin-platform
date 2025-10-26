@@ -1,6 +1,6 @@
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { User, Reseller, UserFilters, UserRole, UserStatus } from '../../domain/entities/User';
-import { PaginatedResponse, PaginationParams } from '@/shared/domain/types/common.types';
+import { PaginatedResponse, PaginationParams } from '@/shared/types/common.types';
 
 /**
  * Mock implementation of User Repository

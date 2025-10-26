@@ -1,4 +1,4 @@
-import { BaseEntity } from '@/shared/domain/types/common.types';
+import { BaseEntity } from '@/shared/types/common.types';
 
 export enum UserRole {
   ADMIN = 'admin',

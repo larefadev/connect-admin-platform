@@ -1,5 +1,5 @@
 import { Order, OrderFilters } from '../entities/Order';
-import { PaginatedResponse, PaginationParams } from '@/shared/domain/types/common.types';
+import { PaginatedResponse, PaginationParams } from '@/shared/types/common.types';
 
 /**
  * Order Repository Interface

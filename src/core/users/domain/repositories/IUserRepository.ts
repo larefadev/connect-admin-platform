@@ -1,5 +1,5 @@
 import { User, Reseller, UserFilters } from '../entities/User';
-import { PaginatedResponse, PaginationParams } from '@/shared/domain/types/common.types';
+import { PaginatedResponse, PaginationParams } from '@/shared/types/common.types';
 
 /**
  * User Repository Interface
