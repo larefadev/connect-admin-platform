@@ -41,7 +41,7 @@ export const useCancelRegistration = () => {
         localStorage.removeItem('registration_step');
         
         // Redirigir a la página de login
-        router.push('/auth/login');
+        router.push('/login');
       } else {
         // Si no se puede cancelar (proceso ya completado), cerrar diálogo
         setShowConfirmDialog(false);

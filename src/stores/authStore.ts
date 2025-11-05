@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface Admin {
   id: string;
@@ -41,6 +41,11 @@ export const useAuthStore = create<AuthState>()(
           admin,
           error: null,
         });
+
+        // Guardar en cookie para que el middleware pueda leerlo
+        if (typeof document !== 'undefined') {
+          document.cookie = `connect-admin-auth=true; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 días
+        }
       },
 
       logout: () => {
@@ -49,6 +54,11 @@ export const useAuthStore = create<AuthState>()(
           admin: null,
           error: null,
         });
+
+        // Eliminar cookie
+        if (typeof document !== 'undefined') {
+          document.cookie = 'connect-admin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
       },
 
       updateAdmin: (adminData: Partial<Admin>) => {
@@ -75,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'connect-admin-auth',
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         admin: state.admin,

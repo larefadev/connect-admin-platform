@@ -2,9 +2,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import Modal from '../ui/Modal';
-import { Product } from '@/core/products/application/use-cases/useProducts';
-import { brandAutoParts } from '@/app/products/helpers/brands';
-import { categories } from '@/app/products/helpers/categories';
+import { Product } from '@/core/products/interface/Product';
+import { brandAutoParts } from '@/app/dashboard/products/helpers/brands';
+import { categories } from '@/app/dashboard/products/helpers/categories';
 import { Package, Upload, AlertCircle } from 'lucide-react';
 import supabase from '@/lib/Supabase';
 

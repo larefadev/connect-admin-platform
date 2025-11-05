@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { container } from '@/shared/infrastructure/di/container';
@@ -9,7 +9,9 @@ import { useAuthStore } from '@/stores/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, setLoading, setError } = useAuthStore();
+  const searchParams = useSearchParams();
+  const { login, setLoading, setError, isAuthenticated } = useAuthStore();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +19,14 @@ export default function LoginPage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('✅ Usuario ya autenticado, redirigiendo...');
+      router.push(redirectUrl);
+    }
+  }, [isAuthenticated, router, redirectUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +63,9 @@ export default function LoginPage() {
           admin_status: result.admin.adminStatus,
         });
 
-        // Redirigir al dashboard
-        router.push('/dashboard');
+        // Redirigir a la URL solicitada o al dashboard
+        console.log('✅ Login exitoso, redirigiendo a:', redirectUrl);
+        router.push(redirectUrl);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error inesperado';

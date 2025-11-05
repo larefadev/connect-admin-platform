@@ -1,6 +1,6 @@
 import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { Reseller, UserFilters } from '../../domain/entities/User';
-import { PaginatedResponse, PaginationParams } from '@/shared/domain/types/common.types';
+import { PaginatedResponse, PaginationParams } from '@/shared/types/common.types';
 
 /**
  * Use Case: Get Resellers
