@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
 import {
   Search,
@@ -302,10 +303,12 @@ export default function PendingApplicationsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {application.profile_image ? (
-                          <img 
+                          <Image 
                             className="h-12 w-12 rounded-full object-cover" 
                             src={application.profile_image} 
                             alt={`${application.name || application.username} profile`}
+                            width={48}
+                            height={48}
                           />
                         ) : (
                           <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">

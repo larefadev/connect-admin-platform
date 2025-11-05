@@ -29,10 +29,26 @@ export default function AddCrossReferenceModal({
   const [yearFilter, setYearFilter] = useState('');
 
   // Estados para los datos de filtros
+  interface AssemblyPlant {
+    code: string;
+    assembly_plant: string;
+  }
+  
+  interface Model {
+    id: number;
+    model_car: string;
+    code_assembly_plant: string;
+  }
+  
+  interface Motorization {
+    code: string;
+    motorization: string;
+  }
+  
   const [brands, setBrands] = useState<string[]>([]);
-  const [assemblyPlants, setAssemblyPlants] = useState<any[]>([]);
-  const [models, setModels] = useState<any[]>([]);
-  const [motorizations, setMotorizations] = useState<any[]>([]);
+  const [assemblyPlants, setAssemblyPlants] = useState<AssemblyPlant[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [motorizations, setMotorizations] = useState<Motorization[]>([]);
   const [years, setYears] = useState<string[]>([]);
 
   const {
@@ -121,7 +137,7 @@ export default function AddCrossReferenceModal({
 
   // Apply filters when debounced search or catalog filters change
   useEffect(() => {
-    const filters: any = {};
+    const filters: Record<string, string> = {};
     
     if (debouncedSearch.trim()) {
       filters.search = debouncedSearch;
@@ -236,7 +252,7 @@ export default function AddCrossReferenceModal({
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Todas</option>
-                {assemblyPlants.map((plant: any) => (
+                {assemblyPlants.map((plant) => (
                   <option key={plant.code} value={plant.assembly_plant || ''}>
                     {plant.assembly_plant}
                   </option>
@@ -254,7 +270,7 @@ export default function AddCrossReferenceModal({
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
               >
                 <option value="">Todos</option>
-                {models.map((model: any) => (
+                {models.map((model) => (
                   <option key={model.id} value={model.model_car || ''}>
                     {model.model_car}
                   </option>
@@ -271,7 +287,7 @@ export default function AddCrossReferenceModal({
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Todas</option>
-                {motorizations.map((motorization: any) => (
+                {motorizations.map((motorization) => (
                   <option key={motorization.code} value={motorization.motorization || ''}>
                     {motorization.motorization}
                   </option>

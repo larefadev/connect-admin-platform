@@ -4,9 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { container } from '@/shared/infrastructure/di/container';
+import { ToastProvider, useToast } from '@/shared/contexts/ToastContext';
+import { ToastContainer } from '@/shared/components/ui/Toast';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+}
+
+function DashboardLayoutContent({ children }: DashboardLayoutProps) {
+  const { toasts, removeToast } = useToast();
+
+  return (
+    <>
+      {children}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </>
+  );
 }
 
 /**
@@ -98,5 +111,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   // Render children if authenticated and authorized
-  return <>{children}</>;
+  return (
+    <ToastProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </ToastProvider>
+  );
 }

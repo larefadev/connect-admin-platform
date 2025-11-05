@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { AlertTriangle, X } from 'lucide-react';
+import Image from 'next/image';
 import { Person } from '@/core/sellers/interface/Person';
 
 interface DeleteResellerModalProps {
@@ -97,10 +98,12 @@ export function DeleteResellerModal({
                 <div className="mt-6 bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center space-x-3">
                     {reseller.profile_image ? (
-                      <img 
+                      <Image 
                         className="h-10 w-10 rounded-full object-cover" 
                         src={reseller.profile_image} 
                         alt={`${displayName} profile`}
+                        width={40}
+                        height={40}
                       />
                     ) : (
                       <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center">

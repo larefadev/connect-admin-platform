@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, User, Mail, Save } from 'lucide-react';
+import Image from 'next/image';
 import { Person } from '@/core/sellers/interface/Person';
 
 interface EditResellerModalProps {
@@ -145,10 +146,12 @@ export function EditResellerModal({
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center space-x-3">
                     {reseller.profile_image ? (
-                      <img 
+                      <Image 
                         className="h-12 w-12 rounded-full object-cover" 
                         src={reseller.profile_image} 
                         alt={`${displayName} profile`}
+                        width={48}
+                        height={48}
                       />
                     ) : (
                       <div className="h-12 w-12 bg-gray-300 rounded-full flex items-center justify-center">

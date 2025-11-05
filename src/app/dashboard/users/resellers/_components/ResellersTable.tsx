@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Person } from '@/core/sellers/interface/Person';
 import { ResellerActionMenu } from './ResellerActionMenu';
 
@@ -28,6 +29,46 @@ function formatDate(dateString: string) {
   });
 }
 
+function getCity(reseller: Person): string {
+  const storeProfile = reseller.StoreProfile;
+  
+  if (!storeProfile) {
+    return 'N/A';
+  }
+  
+  // Prioridad 1: municipality
+  if (storeProfile.municipality && storeProfile.municipality.trim() !== '') {
+    return storeProfile.municipality.trim();
+  }
+  
+  // Prioridad 2: city (campo directo)
+  if (storeProfile.city && storeProfile.city.trim() !== '') {
+    return storeProfile.city.trim();
+  }
+  
+  // Prioridad 3: city.name desde la relación adress -> city
+  if (storeProfile.adress?.city?.name && storeProfile.adress.city.name.trim() !== '') {
+    return storeProfile.adress.city.name.trim();
+  }
+  
+  return 'N/A';
+}
+
+function getPostalCode(reseller: Person): string {
+  const storeProfile = reseller.StoreProfile;
+  
+  if (!storeProfile) {
+    return 'N/A';
+  }
+  
+  // Código postal desde store_profile
+  if (storeProfile.postal_code && storeProfile.postal_code.trim() !== '') {
+    return storeProfile.postal_code.trim();
+  }
+  
+  return 'N/A';
+}
+
 export function ResellersTable({ 
   resellers, 
   onStatusChange, 
@@ -43,6 +84,12 @@ export function ResellersTable({
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Revendedor
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ciudad
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Código Postal
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Estado
@@ -61,10 +108,12 @@ export function ResellersTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     {reseller.profile_image ? (
-                      <img 
+                      <Image 
                         className="h-10 w-10 rounded-full object-cover" 
                         src={reseller.profile_image} 
                         alt={`${reseller.name || reseller.username} profile`}
+                        width={40}
+                        height={40}
                       />
                     ) : (
                       <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center">
@@ -83,6 +132,12 @@ export function ResellersTable({
                       <div className="text-sm text-gray-500">{reseller.email}</div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {getCity(reseller)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {getPostalCode(reseller)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(reseller.status)}`}>

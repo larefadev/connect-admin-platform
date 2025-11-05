@@ -18,6 +18,9 @@ export interface Product {
   category?: string;
   provider?: string;
   provider_id?: number;
+  provider_sku?: string; // Campo para búsqueda por provider SKU
+  totalStock?: number; // Stock total sumado de todas las sucursales
+  is_visible?: boolean; // Estado de visibilidad del producto
   [key: string]: unknown;
 }
 

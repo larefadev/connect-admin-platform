@@ -52,13 +52,15 @@ export default function ProductListingPage() {
     itemsPerPage, 
     createProduct, 
     deleteProduct, 
-    updateProduct, 
+    updateProduct,
+    toggleProductVisibility,
     bulkStockUpdate, 
     bulkImport, 
     filterProducts,
     searchProducts,
     getSearchSuggestions,
-    handlePageChange
+    handlePageChange,
+    refreshProducts
   } = useProducts();
   // Handle product edit
   const handleEditProduct = (product: Product) => {
@@ -81,6 +83,17 @@ export default function ProductListingPage() {
   const handleDeleteProduct = (product: Product) => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar el producto "${product.name}"?\n\nEsta acción no se puede deshacer.`)) {
       deleteProduct(product.SKU);
+    }
+  };
+
+  // Handle toggle product visibility
+  const handleToggleVisibility = async (product: Product) => {
+    try {
+      const currentVisibility = product.is_visible !== false; // Default true si no está definido
+      await toggleProductVisibility(product.SKU, currentVisibility);
+    } catch (error) {
+      console.error('Error al cambiar visibilidad del producto:', error);
+      // El error ya se maneja en el hook, pero podemos mostrar un mensaje adicional si es necesario
     }
   };
 
@@ -150,14 +163,24 @@ export default function ProductListingPage() {
   };
 
   // Handle bulk stock update
-  const handleBulkStockUpdate = async (updates: { product_sku: string; provider_branch_id: number; stock: number; reserved_stock?: number }[]) => {
+  const handleBulkStockUpdate = async (
+    updates: { provider_sku: string; provider_branch_id: number; stock: number; reserved_stock?: number }[],
+    onProgress?: (progress: { current: number; total: number; updated: number; created: number; skipped: number }) => void,
+    signal?: AbortSignal
+  ) => {
     console.log('🔄 Actualizando stock masivamente:', updates);
 
     try {
-      await bulkStockUpdate(updates);
+      await bulkStockUpdate(updates, onProgress, signal);
       console.log('✅ Stock actualizado exitosamente');
     } catch (error) {
-      console.error('❌ Error actualizando stock:', error);
+      // No hacer log de cancelaciones (AbortError)
+      const isCancelled = error instanceof DOMException && error.name === 'AbortError' ||
+                         error instanceof Error && error.name === 'AbortError';
+      
+      if (!isCancelled) {
+        console.error('❌ Error actualizando stock:', error);
+      }
       throw error;
     }
   };
@@ -211,7 +234,12 @@ export default function ProductListingPage() {
         />
 
         {/* Stats Cards */}
-        <StatCard count={products.length} />
+        <StatCard 
+          count={products.length} 
+          onRefresh={refreshProducts}
+          isRefreshing={loading}
+        />
+
 
         {/* Filters and Search */}
         <FilterSearch
@@ -231,6 +259,7 @@ export default function ProductListingPage() {
           handleViewDetails={handleViewDetails}
           handleUpdateInventory={handleUpdateInventory}
           handleDeleteProduct={handleDeleteProduct}
+          handleToggleVisibility={handleToggleVisibility}
           products={paginatedProducts}
           loading={loading || filtering}
         />

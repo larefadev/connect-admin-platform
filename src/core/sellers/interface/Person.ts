@@ -11,6 +11,21 @@ interface PersonType {
 
 
 
+export interface City {
+    id: bigint;
+    name: string;
+    created_at?: string;
+}
+
+export interface Address {
+    id: bigint;
+    city_id?: bigint;
+    zone?: string;
+    street?: string;
+    created_at?: string;
+    city?: City;
+}
+
 export interface StoreProfile {
     id: string;
     name: string;
@@ -35,8 +50,11 @@ export interface StoreProfile {
     state?: string;
     postal_code?: string;
     address_reference?: string;
+    city?: string;
     created_at?: string;
     updated_at?: string;
+    // Relaciones opcionales
+    adress?: Address;
 }
 
 

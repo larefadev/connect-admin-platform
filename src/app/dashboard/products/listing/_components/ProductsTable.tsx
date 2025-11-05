@@ -8,6 +8,7 @@ interface ProductsTableProps {
   handleViewDetails: (product: Product) => void
   handleUpdateInventory: (product: Product) => void
   handleDeleteProduct: (product: Product) => void
+  handleToggleVisibility: (product: Product) => void
   products: Product[]
   loading: boolean
 }
@@ -17,7 +18,8 @@ export const ProductsTable = (
     handleEditProduct, 
     handleViewDetails,
     handleUpdateInventory,
-    handleDeleteProduct, 
+    handleDeleteProduct,
+    handleToggleVisibility,
     products, 
     loading 
   }: ProductsTableProps) => {
@@ -48,6 +50,12 @@ export const ProductsTable = (
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Precio
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Stock
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Acciones
               </th>
@@ -56,7 +64,7 @@ export const ProductsTable = (
           <tbody className="bg-white divide-y divide-gray-200">
             {products.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={7} className="px-6 py-12 text-center">
                   <Package className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No hay productos</h3>
                   <p className="mt-1 text-sm text-gray-500">
@@ -117,6 +125,24 @@ export const ProductsTable = (
                     </div>
                   </td>
 
+                  {/* Columna: Stock */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {(product.totalStock ?? 0).toLocaleString('es-MX')}
+                    </div>
+                  </td>
+
+                  {/* Columna: Estado */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      product.is_visible !== false 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {product.is_visible !== false ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+
                   {/* Columna: Acciones */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <ActionMenu
@@ -125,6 +151,7 @@ export const ProductsTable = (
                       onViewDetails={handleViewDetails}
                       onUpdateInventory={handleUpdateInventory}
                       onDelete={handleDeleteProduct}
+                      onToggleVisibility={handleToggleVisibility}
                     />
                   </td>
                 </tr>

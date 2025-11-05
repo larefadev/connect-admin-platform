@@ -37,7 +37,7 @@ interface ProductDetail {
   brand_code?: string;
   provider?: string;
   provider_id?: number;
-  provider_sku?: number | null;
+  provider_sku?: string | null;
 }
 
 interface CrossReference {
@@ -109,7 +109,7 @@ export default function ProductDetailPage() {
   
   // Estados para provider_sku editable
   const [isEditingProviderSKU, setIsEditingProviderSKU] = useState(false);
-  const [providerSKUValue, setProviderSKUValue] = useState('');
+  const [providerSKUValue, setProviderSKUValue] = useState<string>('');
   const [isSavingProviderSKU, setIsSavingProviderSKU] = useState(false);
 
   const loadProductData = useCallback(async () => {
@@ -181,7 +181,7 @@ export default function ProductDetailPage() {
       
       setProduct(productData);
       setInventory(inventory);
-      setProviderSKUValue(productData.provider_sku ? String(productData.provider_sku) : '');
+      setProviderSKUValue(productData.provider_sku || '');
 
     } catch (err) {
       setError('Error al cargar los detalles del producto');
@@ -214,30 +214,24 @@ export default function ProductDetailPage() {
       }
 
       // Transformar datos de compatibilidades
-      const compatibilities: CompatibilityItem[] = (compatibilitiesData || []).map((item: any) => ({
-        id: item.id,
-        sku: item.sku,
-        assembly_plant_id: item.assembly_plant_id || '',
-        assembly_plant: item.assembly_plant || '',
-        model_id: item.model_id || '',
-        model: item.model || '',
-        year_id: item.year_id || '',
-        year: item.year || '',
-        motorization_id: item.motorization_id || '',
-        motorization: item.motorization || '',
-        created_at: item.created_at
+      const compatibilities: CompatibilityItem[] = (compatibilitiesData || []).map((item: Record<string, string | number>) => ({
+        id: item.id as number,
+        sku: item.sku as string,
+        assembly_plant_id: (item.assembly_plant_id as string) || '',
+        assembly_plant: (item.assembly_plant as string) || '',
+        model_id: (item.model_id as string) || '',
+        model: (item.model as string) || '',
+        year_id: (item.year_id as string) || '',
+        year: (item.year as string) || '',
+        motorization_id: (item.motorization_id as string) || '',
+        motorization: (item.motorization as string) || '',
+        created_at: item.created_at as string
       }));
 
       setCompatibilities(compatibilities);
       setTotalCompatibilities(count || 0);
       setCurrentPage(page);
       
-      console.log('Compatibilidades cargadas:', {
-        total: count,
-        page,
-        itemsPerPage,
-        loaded: compatibilities.length
-      });
 
     } catch (err) {
       console.error('Error loading compatibilities:', err);
@@ -393,19 +387,11 @@ export default function ProductDetailPage() {
     
     setIsSavingProviderSKU(true);
     try {
-      // Convertir el valor a número o null
-      const providerSKUNumber = providerSKUValue.trim() ? parseInt(providerSKUValue, 10) : null;
-      
-      if (providerSKUValue.trim() && isNaN(providerSKUNumber!)) {
-        alert('El SKU del proveedor debe ser un número válido');
-        setIsSavingProviderSKU(false);
-        return;
-      }
+      // Convertir el valor a string o null
+      const value = providerSKUValue.trim() === '' ? null : providerSKUValue.trim();
 
       const { error } = await supabase
-        .from('products_test')
-        .update({ provider_sku: providerSKUNumber })
-        .eq('SKU', product.SKU);
+        .from('products_test').update({ provider_sku: value }).eq('SKU', product.SKU);
 
       if (error) {
         console.error('Error updating provider_sku:', error);
@@ -413,7 +399,7 @@ export default function ProductDetailPage() {
       }
 
       // Actualizar el producto local
-      setProduct({ ...product, provider_sku: providerSKUNumber });
+      setProduct({ ...product, provider_sku: value });
       setIsEditingProviderSKU(false);
       alert('SKU del proveedor actualizado exitosamente');
     } catch (err) {
@@ -651,7 +637,7 @@ export default function ProductDetailPage() {
                       <button
                         onClick={() => {
                           setIsEditingProviderSKU(false);
-                          setProviderSKUValue(product.provider_sku ? String(product.provider_sku) : '');
+                          setProviderSKUValue(product.provider_sku || '');
                         }}
                         className="px-2 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
                       >
@@ -983,7 +969,7 @@ export default function ProductDetailPage() {
                 <div className="text-center py-8 text-gray-500">
                   <LinkIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>No hay referencias cruzadas asignadas</p>
-                  <p className="text-sm mt-2">Haz clic en "Asignar Cross Reference" para agregar productos relacionados</p>
+                  <p className="text-sm mt-2">Haz clic en &quot;Asignar Cross Reference&quot; para agregar productos relacionados</p>
                 </div>
               ) : (
                 <div className="space-y-3">

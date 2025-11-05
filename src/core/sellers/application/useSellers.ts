@@ -11,11 +11,93 @@ export const useSeller = () => {
         setLoading(true);
         setError(null);        
         try {
-            const {data , error} = await supabase.from('person').select('*');
-            if (error) {
-                throw error;
+            // Primero obtener todos los person
+            const {data: personsData, error: personsError} = await supabase
+                .from('person')
+                .select('*');
+            
+            if (personsError) {
+                throw personsError;
             }
-            setSellers(data);
+
+            if (!personsData || personsData.length === 0) {
+                setSellers([]);
+                return;
+            }
+
+            // Para cada person, obtener su store y store_profile
+            const transformedData = await Promise.all(
+                personsData.map(async (person: Person) => {
+                    // Buscar store asociado a esta persona
+                    const { data: storeData, error: storeError } = await supabase
+                        .from('store')
+                        .select('profile_id')
+                        .eq('lord_id', person.id)
+                        .maybeSingle();
+
+                    if (storeError || !storeData) {
+                        return {
+                            ...person,
+                            StoreProfile: undefined
+                        };
+                    }
+
+                    // Obtener store_profile completo
+                    const { data: storeProfileData, error: profileError } = await supabase
+                        .from('store_profile')
+                        .select('*')
+                        .eq('id', storeData.profile_id)
+                        .maybeSingle();
+
+                    if (profileError || !storeProfileData) {
+                        return {
+                            ...person,
+                            StoreProfile: undefined
+                        };
+                    }
+
+                    // Si hay address, obtener adress y city
+                    let adressData = null;
+                    if (storeProfileData.address) {
+                        const { data: addressInfo, error: addressError } = await supabase
+                            .from('adress')
+                            .select('*')
+                            .eq('id', storeProfileData.address)
+                            .maybeSingle();
+
+                        if (!addressError && addressInfo) {
+                            // Si hay city_id, obtener el nombre de la ciudad
+                            let cityData = null;
+                            if (addressInfo.city_id) {
+                                const { data: cityInfo, error: cityError } = await supabase
+                                    .from('city')
+                                    .select('name')
+                                    .eq('id', addressInfo.city_id)
+                                    .maybeSingle();
+
+                                if (!cityError && cityInfo) {
+                                    cityData = cityInfo;
+                                }
+                            }
+
+                            adressData = {
+                                ...addressInfo,
+                                city: cityData
+                            };
+                        }
+                    }
+
+                    return {
+                        ...person,
+                        StoreProfile: {
+                            ...storeProfileData,
+                            adress: adressData || undefined
+                        }
+                    };
+                })
+            );
+
+            setSellers(transformedData);
             
         } catch (err) {
             setError('Error al obtener vendedores');

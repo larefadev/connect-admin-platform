@@ -45,6 +45,7 @@ export const SearchInput = ({
 }: SearchInputProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -264,18 +265,23 @@ export const SearchInput = ({
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      {suggestion.image && (
-                        <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded overflow-hidden">
+                      {suggestion.image && !imageErrors.has(suggestion.image) ? (
+                        <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded overflow-hidden relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={suggestion.image}
                             alt={suggestion.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder-product.png";
+                            onError={() => {
+                              setImageErrors((prev) => new Set(prev).add(suggestion.image!));
                             }}
                           />
                         </div>
-                      )}
+                      ) : suggestion.image && imageErrors.has(suggestion.image) ? (
+                        <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-gray-400" />
+                        </div>
+                      ) : null}
                       <div className="flex-1 min-w-0">
                         <button
                           onClick={() => handleSelectSuggestion(suggestion)}

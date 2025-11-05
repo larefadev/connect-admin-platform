@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { 
   ArrowLeft, 
   User, 
@@ -222,10 +223,12 @@ export default function ResellerDetailsPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="text-center">
                 {reseller.profile_image ? (
-                  <img 
+                  <Image 
                     className="h-32 w-32 rounded-full object-cover mx-auto" 
                     src={reseller.profile_image} 
                     alt={`${displayName} profile`}
+                    width={128}
+                    height={128}
                   />
                 ) : (
                   <div className="h-32 w-32 bg-gray-300 rounded-full flex items-center justify-center mx-auto">

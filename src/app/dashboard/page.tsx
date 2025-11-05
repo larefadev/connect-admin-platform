@@ -2,6 +2,7 @@
 
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
 import { Package, Users, ShoppingCart, DollarSign, TrendingUp, ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   // Datos de ejemplo - en producción vendrían de la API
@@ -68,7 +69,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a
+            <Link
               href="/dashboard/products/listing"
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -77,8 +78,8 @@ export default function DashboardPage() {
                 <span className="font-medium text-gray-900">Ver Productos</span>
               </div>
               <ArrowUpRight className="h-4 w-4 text-gray-400" />
-            </a>
-            <a
+            </Link>
+            <Link
               href="/dashboard/users/resellers"
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -87,8 +88,8 @@ export default function DashboardPage() {
                 <span className="font-medium text-gray-900">Gestionar Usuarios</span>
               </div>
               <ArrowUpRight className="h-4 w-4 text-gray-400" />
-            </a>
-            <a
+            </Link>
+            <Link
               href="/dashboard/orders"
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -97,7 +98,7 @@ export default function DashboardPage() {
                 <span className="font-medium text-gray-900">Ver Pedidos</span>
               </div>
               <ArrowUpRight className="h-4 w-4 text-gray-400" />
-            </a>
+            </Link>
           </div>
         </div>
 

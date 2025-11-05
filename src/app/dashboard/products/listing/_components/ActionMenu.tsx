@@ -1,6 +1,6 @@
 import { Product } from "@/core/products/interface/Product";
 import { Menu } from "@headlessui/react";
-import { MoreHorizontal, Eye, Edit, Trash2, Package } from 'lucide-react';
+import { MoreHorizontal, Eye, EyeOff, Edit, Trash2, Package } from 'lucide-react';
 
 
 interface ActionMenuProps {
@@ -9,11 +9,12 @@ interface ActionMenuProps {
     onViewDetails: (product: Product) => void;
     onUpdateInventory: (product: Product) => void;
     onDelete: (product: Product) => void;
+    onToggleVisibility: (product: Product) => void;
 }
   
 
 
-export function ActionMenu({ product, onEdit, onViewDetails, onUpdateInventory, onDelete }: ActionMenuProps) {
+export function ActionMenu({ product, onEdit, onViewDetails, onUpdateInventory, onDelete, onToggleVisibility }: ActionMenuProps) {
     return (
       <Menu as="div" className="relative">
         <Menu.Button className="p-2 hover:bg-gray-100 rounded-lg">
@@ -56,6 +57,28 @@ export function ActionMenu({ product, onEdit, onViewDetails, onUpdateInventory, 
               >
                 <Package className="h-4 w-4 mr-2" />
                 Actualizar Inventario
+              </button>
+            )}
+          </Menu.Item>
+          <Menu.Item>
+            {({ active }) => (
+              <button
+                onClick={() => onToggleVisibility(product)}
+                className={`w-full flex items-center px-4 py-2 text-sm ${
+                  active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
+                }`}
+              >
+                {product.is_visible !== false ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Desactivar Producto
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Activar Producto
+                  </>
+                )}
               </button>
             )}
           </Menu.Item>
