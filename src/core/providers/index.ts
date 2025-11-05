@@ -1,4 +1,4 @@
-export { useProviders } from './useProviders';
-export { useProviderBranches } from './useProviderBranches';
-export type { Provider, CreateProviderData, UpdateProviderData } from './Entities/Provider';
-export type { ProviderBranch, CreateProviderBranchData, UpdateProviderBranchData } from './Entities/ProviderBranch';
+export { useProviders } from './application/useProviders';
+export { useProviderBranches } from './application/useProviderBranches';
+export type { Provider, CreateProviderData, UpdateProviderData } from './interfaces/Provider';
+export type { ProviderBranch, CreateProviderBranchData, UpdateProviderBranchData } from './interfaces/ProviderBranch';

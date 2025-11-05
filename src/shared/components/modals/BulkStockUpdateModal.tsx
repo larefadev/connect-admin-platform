@@ -1,16 +1,23 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Modal from '../ui/Modal';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import supabase from '@/lib/Supabase';
+import { useToast } from '@/shared/contexts/ToastContext';
 
 interface BulkStockUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (updates: StockUpdate[]) => Promise<void>;
+  onUpdate: (
+    updates: StockUpdate[],
+    onProgress?: (progress: { current: number; total: number; updated: number; created: number; skipped: number }) => void,
+    signal?: AbortSignal
+  ) => Promise<void>;
 }
 
 interface StockUpdate {
-  product_sku: string;
+  provider_sku: string;
   provider_branch_id: number;
   stock: number;
   reserved_stock?: number;
@@ -24,12 +31,34 @@ interface ProcessedFile {
   updates: StockUpdate[];
 }
 
+interface ProviderBranch {
+  id: number;
+  provider_id: number;
+  branch_name: string;
+  city: string;
+  provider_name: string;
+}
+
+interface ProviderBranchData {
+  id: number;
+  provider_id: number;
+  branch_name: string;
+  city: string;
+}
+
 export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: BulkStockUpdateModalProps) {
+  const { addToast, updateToast, removeToast, registerAbortController, cancelOperation } = useToast();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedFile, setProcessedFile] = useState<ProcessedFile | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string>('');
+  const [providerBranchId, setProviderBranchId] = useState<number>(0);
+  const [providerBranches, setProviderBranches] = useState<ProviderBranch[]>([]);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const activeToastIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -47,27 +76,161 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
     
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
+      if (!providerBranchId) {
+        setError('Por favor selecciona una sucursal de proveedor antes de cargar el archivo');
+        return;
+      }
       processFile(files[0]);
     }
-  }, []);
+  }, [providerBranchId]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      if (!providerBranchId) {
+        setError('Por favor selecciona una sucursal de proveedor antes de cargar el archivo');
+        return;
+      }
       processFile(files[0]);
+    }
+  }, [providerBranchId]);
+
+  const loadProviderBranches = useCallback(async () => {
+    setIsLoadingBranches(true);
+    setError('');
+    try {
+      // Primero obtener las sucursales
+      const { data: branchesData, error: branchesError } = await supabase
+        .from('provider_branches')
+        .select(`
+          id,
+          provider_id,
+          branch_name,
+          city
+        `)
+        .eq('is_active', true)
+        .order('provider_id')
+        .order('branch_name');
+
+      if (branchesError) {
+        console.error('Error loading branches:', branchesError);
+        setError('Error al cargar sucursales de proveedores');
+        setIsLoadingBranches(false);
+        return;
+      }
+
+      if (!branchesData || branchesData.length === 0) {
+        console.warn('No se encontraron sucursales activas');
+        setProviderBranches([]);
+        setIsLoadingBranches(false);
+        return;
+      }
+
+      // Obtener los IDs únicos de proveedores
+      const providerIds = [...new Set(branchesData.map(b => b.provider_id))];
+      
+      // Obtener los nombres de los proveedores
+      const { data: providersData, error: providersError } = await supabase
+        .from('provider')
+        .select('id, name')
+        .in('id', providerIds);
+
+      if (providersError) {
+        console.error('Error loading providers:', providersError);
+        // Continuar sin nombres de proveedores
+      }
+
+      // Crear un mapa de proveedores para acceso rápido
+      const providerMap = new Map<number, string>();
+      providersData?.forEach((provider: { id: number; name: string }) => {
+        providerMap.set(provider.id, provider.name);
+      });
+
+      // Mapear las sucursales con los nombres de proveedores
+      const branches: ProviderBranch[] = branchesData.map((branch: ProviderBranchData) => ({
+        id: branch.id,
+        provider_id: branch.provider_id,
+        branch_name: branch.branch_name,
+        city: branch.city,
+        provider_name: providerMap.get(branch.provider_id) || 'Sin nombre'
+      }));
+
+      console.log('✅ Sucursales cargadas:', branches.length);
+      setProviderBranches(branches);
+    } catch (err) {
+      console.error('Error loading provider branches:', err);
+      setError('Error al cargar sucursales de proveedores');
+      setProviderBranches([]);
+    } finally {
+      setIsLoadingBranches(false);
     }
   }, []);
 
+  // Cargar sucursales de proveedores cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      if (providerBranches.length === 0) {
+        loadProviderBranches();
+      }
+    } else {
+      // Reset providerBranchId cuando se cierra el modal
+      setProviderBranchId(0);
+      setProcessedFile(null);
+      setError('');
+    }
+  }, [isOpen, providerBranches.length, loadProviderBranches]);
+
+  // Cleanup: Solo marcar como desmontado, NO cancelar operaciones ni remover toast
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // NO cancelar la operación - debe continuar ejecutándose
+      // NO remover el toast - debe persistir para que el usuario lo vea
+      // Solo marcamos como desmontado para evitar actualizaciones de estado
+    };
+  }, []);
+
   const processFile = async (file: File) => {
+    // Validar que se haya seleccionado una sucursal
+    if (!providerBranchId || providerBranchId <= 0) {
+      setError('Por favor selecciona una sucursal de proveedor antes de cargar el archivo');
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
     setProcessedFile(null);
 
     try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      const isExcel = fileExtension === 'xlsx' || fileExtension === 'xls';
       
-      if (lines.length === 0) {
+      let rows: string[][] = [];
+
+      if (isExcel) {
+        // Leer archivo Excel
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // Obtener la primera hoja
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convertir a JSON con formato de array de arrays
+        rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as string[][];
+      } else {
+        // Leer archivo CSV o texto plano
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        rows = lines.map(line => {
+          // Dividir por comas, punto y coma o tabs, respetando comillas
+          const columns = line.split(/[,;\t]/).map(col => col.trim().replace(/^["']|["']$/g, ''));
+          return columns;
+        });
+      }
+      
+      if (rows.length === 0) {
         throw new Error('El archivo está vacío');
       }
 
@@ -75,33 +238,40 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
       const errors: string[] = [];
       let validRows = 0;
 
-      // Skip header if present (check if first line contains expected columns)
-      const startIndex = lines[0].toLowerCase().includes('product_sku') || lines[0].toLowerCase().includes('stock') ? 1 : 0;
+      // Detectar si la primera fila es un encabezado
+      const firstRow = rows[0];
+      const startIndex = firstRow.some(cell => 
+        cell.toString().toLowerCase().includes('provider_sku') || 
+        cell.toString().toLowerCase().includes('product_sku') || 
+        cell.toString().toLowerCase().includes('stock')
+      ) ? 1 : 0;
 
-      for (let i = startIndex; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const columns = line.split(/[,;\t]/).map(col => col.trim().replace(/"/g, ''));
+      for (let i = startIndex; i < rows.length; i++) {
+        const row = rows[i];
         
-        if (columns.length < 3) {
-          errors.push(`Línea ${i + 1}: Formato incorrecto (se esperan al menos 3 columnas: product_sku, provider_branch_id, stock)`);
+        // Filtrar filas vacías
+        if (!row || row.length === 0 || row.every(cell => !cell || cell.toString().trim() === '')) {
           continue;
         }
 
-        const product_sku = columns[0];
-        const provider_branch_id_value = columns[1];
-        const stockValue = columns[2];
-        const reserved_stock_value = columns[3] || '0';
-
-        if (!product_sku) {
-          errors.push(`Línea ${i + 1}: product_sku vacío`);
+        // Asegurar que hay al menos 2 columnas (provider_sku y stock)
+        if (row.length < 2) {
+          errors.push(`Línea ${i + 1}: Formato incorrecto (se esperan al menos 2 columnas: provider_sku, stock)`);
           continue;
         }
 
-        const provider_branch_id = parseInt(provider_branch_id_value);
-        if (isNaN(provider_branch_id) || provider_branch_id <= 0) {
-          errors.push(`Línea ${i + 1}: provider_branch_id inválido "${provider_branch_id_value}" (debe ser un número > 0)`);
+        // Validar que se haya seleccionado una sucursal
+        if (!providerBranchId || providerBranchId <= 0) {
+          errors.push(`Línea ${i + 1}: No se ha seleccionado una sucursal de proveedor`);
+          continue;
+        }
+
+        // Obtener valores de las columnas (solo provider_sku y stock)
+        const provider_sku = row[0]?.toString().trim() || '';
+        const stockValue = row[1]?.toString().trim() || '';
+
+        if (!provider_sku) {
+          errors.push(`Línea ${i + 1}: provider_sku vacío`);
           continue;
         }
 
@@ -111,24 +281,20 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
           continue;
         }
 
-        const reserved_stock = parseInt(reserved_stock_value) || 0;
-        if (isNaN(reserved_stock) || reserved_stock < 0) {
-          errors.push(`Línea ${i + 1}: reserved_stock inválido "${reserved_stock_value}" (debe ser un número >= 0)`);
-          continue;
-        }
-
+        // provider_branch_id viene del selector del modal
+        // reserved_stock siempre será 0 por defecto
         updates.push({ 
-          product_sku, 
-          provider_branch_id, 
+          provider_sku, 
+          provider_branch_id: providerBranchId, 
           stock,
-          reserved_stock 
+          reserved_stock: 0 
         });
         validRows++;
       }
 
       setProcessedFile({
         fileName: file.name,
-        totalRows: lines.length - startIndex,
+        totalRows: rows.length - startIndex,
         validRows,
         errors,
         updates
@@ -136,6 +302,7 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al procesar el archivo');
+      console.error('Error procesando archivo:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -144,22 +311,128 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
   const handleUpdate = async () => {
     if (!processedFile) return;
 
-    setIsUpdating(true);
-    try {
-      await onUpdate(processedFile.updates);
-      setProcessedFile(null);
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar el stock');
-    } finally {
-      setIsUpdating(false);
-    }
+    // Guardar valores antes de limpiar el estado
+    const updates = processedFile.updates;
+    const validRows = processedFile.validRows;
+
+    // Crear AbortController para poder cancelar la operación
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Crear toast de progreso con botón de cancelar
+    const toastId = addToast({
+      title: 'Actualizando stock masivamente...',
+      type: 'loading',
+      progress: {
+        current: 0,
+        total: updates.length,
+        updated: 0,
+        created: 0,
+        skipped: 0,
+      },
+      onCancel: () => {
+        console.log('⚠️ Usuario canceló la actualización');
+        cancelOperation(toastId);
+      },
+    });
+    activeToastIdRef.current = toastId;
+
+    // Registrar AbortController en el contexto para persistencia
+    registerAbortController(toastId, abortController);
+
+    // Cerrar modal inmediatamente
+    setProcessedFile(null);
+    setIsUpdating(false);
+    onClose();
+
+    // Iniciar actualización en segundo plano
+    let finalProgress: { updated: number; created: number; skipped: number } | null = null;
+
+    // Capturar la promesa para evitar errores no manejados
+    // NOTA: No verificamos isMountedRef aquí porque queremos que el toast se actualice
+    // incluso si el componente se desmontó (navegación)
+    onUpdate(
+      updates,
+      (progress) => {
+        // Guardar progreso final
+        if (progress.current === progress.total) {
+          finalProgress = {
+            updated: progress.updated,
+            created: progress.created,
+            skipped: progress.skipped,
+          };
+        }
+
+        // Actualizar toast con el progreso (siempre, incluso si el componente se desmontó)
+        updateToast(toastId, {
+          progress: {
+            current: progress.current,
+            total: progress.total,
+            updated: progress.updated,
+            created: progress.created,
+            skipped: progress.skipped,
+          },
+        });
+      },
+      abortController.signal
+    )
+      .then(() => {
+        // Limpiar referencias locales si el componente sigue montado
+        if (isMountedRef.current) {
+          abortControllerRef.current = null;
+          activeToastIdRef.current = null;
+        }
+
+        // Cuando termine, actualizar toast a éxito (siempre, incluso si el componente se desmontó)
+        const successMessage = finalProgress
+          ? `Actualizados: ${finalProgress.updated} | Creados: ${finalProgress.created}${finalProgress.skipped > 0 ? ` | Omitidos: ${finalProgress.skipped}` : ''}`
+          : `Actualizados: ${validRows} productos`;
+
+        updateToast(toastId, {
+          title: 'Stock actualizado exitosamente',
+          message: successMessage,
+          type: 'success',
+          duration: 5000,
+        });
+      })
+      .catch((err) => {
+        // Verificar si fue cancelado
+        const isCancelled = err instanceof DOMException && err.name === 'AbortError' ||
+                           err instanceof Error && (err.name === 'AbortError' || err.message.includes('cancelada'));
+
+        // Limpiar referencias locales si el componente sigue montado
+        if (isMountedRef.current) {
+          abortControllerRef.current = null;
+          activeToastIdRef.current = null;
+        }
+
+        // Si fue cancelado silenciosamente (usuario o componente desmontado), no mostrar error
+        // pero aún así actualizar el toast para que el usuario sepa que se canceló
+        if (isCancelled) {
+          updateToast(toastId, {
+            title: 'Actualización cancelada',
+            message: 'La actualización fue cancelada',
+            type: 'error',
+            duration: 5000,
+          });
+          return;
+        }
+
+        // En caso de error real, actualizar toast
+        updateToast(toastId, {
+          title: 'Error al actualizar stock',
+          message: err instanceof Error ? err.message : 'Error al actualizar el stock',
+          type: 'error',
+          duration: 5000,
+        });
+      });
   };
 
   const handleClose = () => {
     if (!isProcessing && !isUpdating) {
       setProcessedFile(null);
       setError('');
+      setProviderBranchId(0);
       onClose();
     }
   };
@@ -176,14 +449,39 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
 
         {!processedFile && (
           <div className="space-y-4">
+            {/* Selector de sucursal de proveedor */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sucursal de Proveedor <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={providerBranchId || ''}
+                onChange={(e) => setProviderBranchId(Number(e.target.value))}
+                disabled={isLoadingBranches || isProcessing}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                required
+              >
+                <option value="">Selecciona una sucursal...</option>
+                {providerBranches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.provider_name} - {branch.branch_name} ({branch.city})
+                  </option>
+                ))}
+              </select>
+              {isLoadingBranches && (
+                <p className="text-xs text-gray-500 mt-1">Cargando sucursales...</p>
+              )}
+            </div>
+
             <div className="text-sm text-gray-600">
               <p className="mb-2">Sube un archivo CSV o Excel con las siguientes columnas:</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
-                <li><strong>product_sku:</strong> Código del producto</li>
-                <li><strong>provider_branch_id:</strong> ID de la sucursal del proveedor</li>
+                <li><strong>provider_sku:</strong> Código del proveedor (SKU del proveedor)</li>
                 <li><strong>stock:</strong> Nueva cantidad en inventario</li>
-                <li><strong>reserved_stock:</strong> (Opcional) Stock reservado</li>
               </ul>
+              <p className="mt-2 text-xs text-gray-500">
+                Nota: La sucursal de proveedor se selecciona arriba y se aplicará a todos los registros del archivo.
+              </p>
             </div>
 
             {/* File Drop Zone */}
@@ -278,23 +576,22 @@ export default function BulkStockUpdateModal({ isOpen, onClose, onUpdate }: Bulk
                 <h4 className="text-sm font-medium text-gray-900 mb-2">
                   Vista previa de actualizaciones:
                 </h4>
+                <div className="mb-2 text-xs text-gray-600">
+                  <p>Sucursal seleccionada: <strong>{providerBranches.find(b => b.id === providerBranchId)?.provider_name} - {providerBranches.find(b => b.id === providerBranchId)?.branch_name}</strong></p>
+                </div>
                 <div className="max-h-40 overflow-y-auto">
                   <table className="min-w-full text-xs">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-1">Product SKU</th>
-                        <th className="text-left py-1">Sucursal ID</th>
+                        <th className="text-left py-1">Provider SKU</th>
                         <th className="text-left py-1">Stock</th>
-                        <th className="text-left py-1">Stock Reservado</th>
                       </tr>
                     </thead>
                     <tbody>
                       {processedFile.updates.slice(0, 10).map((update, index) => (
                         <tr key={index} className="border-b">
-                          <td className="py-1">{update.product_sku}</td>
-                          <td className="py-1">{update.provider_branch_id}</td>
+                          <td className="py-1">{update.provider_sku}</td>
                           <td className="py-1">{update.stock}</td>
-                          <td className="py-1">{update.reserved_stock || 0}</td>
                         </tr>
                       ))}
                     </tbody>

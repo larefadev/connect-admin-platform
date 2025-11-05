@@ -3,14 +3,10 @@
  */
 
 // Entities
-export * from './domain/entities/Product';
-
-// Repositories
-export * from './domain/repositories/IProductRepository';
-
+export * from './interface/Product';
 // Use Cases
 // Note: Only useProducts hook exists currently
 
 // Hooks
-export { useProducts } from './application/use-cases/useProducts';
-export type { ProductStats } from './application/use-cases/useProducts';
+export { useProducts } from './application/useProducts';
+export type { ProductStats } from './interface/Product';

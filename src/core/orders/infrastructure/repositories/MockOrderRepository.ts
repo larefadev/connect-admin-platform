@@ -1,6 +1,6 @@
 import { IOrderRepository } from '../../domain/repositories/IOrderRepository';
 import { Order, OrderFilters, OrderStatus, PaymentStatus } from '../../domain/entities/Order';
-import { PaginatedResponse, PaginationParams } from '@/shared/domain/types/common.types';
+import { PaginatedResponse, PaginationParams } from '@/shared/types/common.types';
 
 /**
  * Mock implementation of Order Repository

@@ -1,164 +1,113 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
-import {
-  Users,
-  Package,
-  ShoppingCart,
-  DollarSign,
-} from 'lucide-react';
-import { StatCard, RecentOrdersTable, TopProductsList } from './_components';
-import { useDashboardMetrics } from '@/core/dashboard';
-import { useProducts } from '@/core/products';
-import { useB2BOrders } from '@/core/orders/application/useOrdersB2B';
+import { Package, Users, ShoppingCart, DollarSign, TrendingUp, ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  // Usar un storeId fijo para demo (en producción vendría del contexto de autenticación)
-  const DEMO_STORE_ID = 1;
-  
-  // Hooks para obtener datos reales
-  const { metrics, loading: metricsLoading, error: metricsError } = useDashboardMetrics(DEMO_STORE_ID);
-  const { getProductStats } = useProducts();
-  const { orders, loading: ordersLoading, error: ordersError } = useB2BOrders(DEMO_STORE_ID);
-  // const { getCustomerStats } = useCustomers(DEMO_STORE_ID); // Para uso futuro
-
-  // Estados locales para datos específicos del dashboard
-  const [recentOrders, setRecentOrders] = useState<Array<{
-    id: string;
-    customer: string;
-    amount: string;
-    status: string;
-    date: string;
-  }>>([]);
-  const [topProducts, setTopProducts] = useState<Array<{
-    name: string;
-    sales: number;
-    revenue: string;
-  }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Cargar datos adicionales
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        // Cargar estadísticas específicas
-        const productStats = await getProductStats();
-
-        // Procesar pedidos B2B para el dashboard
-        const recentB2BOrders = orders.slice(0, 5).map(order => ({
-          id: order.id || 'N/A',
-          customer: order.delivery_contact_name || 'Cliente B2B',
-          amount: `$${order.total_amount.toLocaleString()}`,
-          status: order.order_status,
-          date: order.created_at || new Date().toISOString()
-        }));
-
-        setRecentOrders(recentB2BOrders);
-        setTopProducts(productStats.topProducts || []);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Cargar datos siempre, incluso si no hay órdenes
-    loadDashboardData();
-  }, [orders, getProductStats]);
-
-  // Crear estadísticas para las tarjetas
+  // Datos de ejemplo - en producción vendrían de la API
   const stats = [
     {
-      name: 'Total de Usuarios',
-      value: metrics.totalCustomers.toLocaleString(),
-      change: metrics.newCustomersThisMonth > 0 ? `+${metrics.newCustomersThisMonth}` : '0',
-      changeType: 'increase' as const,
-      icon: Users,
+      name: 'Total de Productos',
+      value: '2,459',
+      change: '+12.5%',
+      icon: Package,
       color: 'bg-blue-500',
     },
     {
-      name: 'Total de Productos',
-      value: metrics.totalProducts.toLocaleString(),
-      change: '+8%',
-      changeType: 'increase' as const,
-      icon: Package,
+      name: 'Usuarios Activos',
+      value: '1,293',
+      change: '+8.2%',
+      icon: Users,
       color: 'bg-green-500',
     },
     {
-      name: 'Total de Pedidos',
-      value: metrics.totalOrders.toLocaleString(),
-      change: metrics.pendingOrders > 0 ? `${metrics.pendingOrders} pendientes` : 'Sin pendientes',
-      changeType: metrics.pendingOrders > 0 ? 'decrease' as const : 'increase' as const,
+      name: 'Pedidos del Mes',
+      value: '847',
+      change: '+23.1%',
       icon: ShoppingCart,
-      color: 'bg-yellow-500',
+      color: 'bg-purple-500',
     },
     {
       name: 'Ingresos',
-      value: `$${metrics.totalRevenue.toLocaleString()}`,
-      change: `Ticket promedio: $${metrics.averageTicket.toFixed(2)}`,
-      changeType: 'increase' as const,
+      value: '$45,231',
+      change: '+15.3%',
       icon: DollarSign,
-      color: 'bg-purple-500',
+      color: 'bg-orange-500',
     },
   ];
-
-  if (metricsLoading || ordersLoading || loading) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
-            <p className="text-gray-600 mt-1">Cargando datos del dashboard...</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (metricsError || ordersError) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
-            <p className="text-red-600 mt-1">Error al cargar datos: {metricsError || ordersError}</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
-          <p className="text-gray-600 mt-1">Bienvenido de nuevo! Esto es lo que está pasando con tu tienda.</p>
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-lg p-6 text-white">
+          <h1 className="text-2xl font-bold mb-2">Bienvenido al Panel de Administración</h1>
+          <p className="text-red-100">Gestiona tu marketplace desde un solo lugar</p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
-            <StatCard key={stat.name} stat={stat} />
+            <div key={stat.name} className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`${stat.color} p-3 rounded-lg`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex items-center text-green-600 text-sm font-medium">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  {stat.change}
+                </div>
+              </div>
+              <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.name}</h3>
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            </div>
           ))}
         </div>
 
-        {/* Charts and Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RecentOrdersTable orders={recentOrders} />
-          <TopProductsList products={topProducts} />
+        {/* Quick Actions */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link
+              href="/dashboard/products/listing"
+              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center">
+                <Package className="h-5 w-5 text-gray-600 mr-3" />
+                <span className="font-medium text-gray-900">Ver Productos</span>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-gray-400" />
+            </Link>
+            <Link
+              href="/dashboard/users/resellers"
+              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center">
+                <Users className="h-5 w-5 text-gray-600 mr-3" />
+                <span className="font-medium text-gray-900">Gestionar Usuarios</span>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-gray-400" />
+            </Link>
+            <Link
+              href="/dashboard/orders"
+              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center">
+                <ShoppingCart className="h-5 w-5 text-gray-600 mr-3" />
+                <span className="font-medium text-gray-900">Ver Pedidos</span>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-gray-400" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h2>
+          <div className="text-center py-8 text-gray-500">
+            <p>No hay actividad reciente para mostrar</p>
+          </div>
         </div>
       </div>
     </DashboardLayout>
