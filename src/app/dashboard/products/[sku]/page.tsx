@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ChangeEvent, DragEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import DashboardLayout from '@/ui/layouts/DashboardLayout';
@@ -22,7 +23,11 @@ import {
   AlertTriangle,
   Link as LinkIcon,
   Plus,
-  ExternalLink
+  ExternalLink,
+  UploadCloud,
+  Loader2,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import AddCrossReferenceModal from '@/shared/components/modals/AddCrossReferenceModal';
 
@@ -82,6 +87,28 @@ interface CompatibilityItem {
   created_at: string;
 }
 
+interface ProductImage {
+  id: number;
+  created_at: string;
+  url: string | null;
+  product_sku: string | null;
+}
+
+type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
+
+interface UploadQueueItem {
+  id: string;
+  file: File;
+  progress: number;
+  status: UploadStatus;
+  error?: string;
+  storagePath?: string;
+  publicUrl?: string;
+}
+
+const STORAGE_BUCKET = 'store-assets';
+const STORAGE_FOLDER = 'products';
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -91,10 +118,16 @@ export default function ProductDetailPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [compatibilities, setCompatibilities] = useState<CompatibilityItem[]>([]);
   const [crossReferences, setCrossReferences] = useState<CrossReference[]>([]);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [deletingImageIds, setDeletingImageIds] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCompatibilities, setIsLoadingCompatibilities] = useState(false);
   const [isLoadingCrossRefs, setIsLoadingCrossRefs] = useState(false);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [error, setError] = useState<string>('');
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Estados para paginación de compatibilidades
   const [currentPage, setCurrentPage] = useState(1);
@@ -190,6 +223,281 @@ export default function ProductDetailPage() {
       setIsLoading(false);
     }
   }, [sku]);
+
+  const loadProductImages = useCallback(async () => {
+    if (!sku) return;
+
+    setIsLoadingImages(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('products_images')
+        .select('*')
+        .eq('product_sku', sku)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading product images:', error);
+        throw error;
+      }
+
+      if (data) {
+        setProductImages(
+          data.map((item) => ({
+            id: item.id,
+            created_at: item.created_at,
+            url: item.url,
+            product_sku: item.product_sku,
+          }))
+        );
+        const firstUrl = data.find((item) => item.url)?.url ?? null;
+        setSelectedImageUrl(firstUrl);
+      }
+    } catch (err) {
+      console.error('Unexpected error loading product images:', err);
+      setProductImages([]);
+      setSelectedImageUrl(null);
+    } finally {
+      setIsLoadingImages(false);
+    }
+  }, [sku]);
+
+  const simulateProgress = useCallback((queueId: string) => {
+    const interval = setInterval(() => {
+      setUploadQueue((prev) =>
+        prev.map((item) => {
+          if (item.id !== queueId || item.status !== 'uploading') {
+            return item;
+          }
+          const next = Math.min(item.progress + Math.floor(Math.random() * 15) + 5, 90);
+          return { ...item, progress: next };
+        })
+      );
+    }, 300);
+
+    return interval;
+  }, []);
+
+  const processUploadQueueItem = useCallback(
+    async (queueItem: UploadQueueItem) => {
+      const queueId = queueItem.id;
+
+      setUploadQueue((prev) =>
+        prev.map((item) =>
+          item.id === queueId
+            ? { ...item, status: 'uploading', progress: Math.max(item.progress, 5), error: undefined }
+            : item
+        )
+      );
+
+      const progressInterval = simulateProgress(queueId);
+
+      try {
+        if (!sku) {
+          throw new Error('SKU del producto no disponible');
+        }
+
+        const file = queueItem.file;
+        const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const uniqueSuffix =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID().replace(/-/g, '')
+            : Math.random().toString(36).slice(2);
+
+        const storagePath = `${STORAGE_FOLDER}/${sku}/${Date.now()}-${uniqueSuffix}.${fileExtension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type || 'image/jpeg',
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
+        const publicUrl = publicUrlData?.publicUrl;
+
+        const { error: insertError } = await supabase.from('products_images').insert([
+          {
+            url: publicUrl,
+            product_sku: sku,
+          },
+        ]);
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === queueId
+              ? { ...item, status: 'success', progress: 100, storagePath, publicUrl }
+              : item
+          )
+        );
+
+        await loadProductImages();
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido al subir la imagen';
+        setUploadQueue((prev) =>
+          prev.map((item) =>
+            item.id === queueId ? { ...item, status: 'error', progress: 0, error: errorMessage } : item
+          )
+        );
+      } finally {
+        clearInterval(progressInterval);
+      }
+    },
+    [loadProductImages, simulateProgress, sku]
+  );
+
+  const enqueueUploads = useCallback(
+    (files: FileList | File[]) => {
+      const filesArray = Array.from(files).filter((file) => file.type.startsWith('image/'));
+
+      if (filesArray.length === 0) {
+        return;
+      }
+
+      const newQueueItems: UploadQueueItem[] = filesArray.map((file) => ({
+        id:
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        progress: 0,
+        status: 'pending',
+      }));
+
+      setUploadQueue((prev) => [...prev, ...newQueueItems]);
+
+      newQueueItems.reduce(
+        (promise, item) =>
+          promise.then(() =>
+            processUploadQueueItem({
+              ...item,
+            })
+          ),
+        Promise.resolve()
+      );
+    },
+    [processUploadQueueItem]
+  );
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const { files } = event.dataTransfer;
+      if (files && files.length > 0) {
+        enqueueUploads(files);
+      }
+    },
+    [enqueueUploads]
+  );
+
+  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  const handleFileInputChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const { files } = event.target;
+      if (files && files.length > 0) {
+        enqueueUploads(files);
+      }
+      event.target.value = '';
+    },
+    [enqueueUploads]
+  );
+
+  const handleBrowseFiles = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const getStoragePathFromUrl = useCallback((url: string) => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) return null;
+
+      const expectedPrefix = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${STORAGE_BUCKET}/`;
+      if (!url.startsWith(expectedPrefix)) {
+        const { pathname } = new URL(url);
+        const publicPrefix = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+        const index = pathname.indexOf(publicPrefix);
+        if (index >= 0) {
+          return pathname.substring(index + publicPrefix.length);
+        }
+        return null;
+      }
+
+      return url.substring(expectedPrefix.length);
+    } catch (error) {
+      console.warn('No se pudo obtener la ruta del objeto desde la URL:', error);
+      return null;
+    }
+  }, []);
+
+  const handleDeleteImage = useCallback(
+    async (image: ProductImage) => {
+      if (!image.url) return;
+
+      const storagePath = getStoragePathFromUrl(image.url);
+      if (!storagePath) {
+        console.warn('No se pudo determinar la ruta del archivo a eliminar.');
+        return;
+      }
+
+      setDeletingImageIds((prev) => {
+        const next = new Set(prev);
+        next.add(image.id);
+        return next;
+      });
+
+      try {
+        const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
+
+        if (storageError) {
+          throw storageError;
+        }
+
+        const { error: deleteError } = await supabase.from('products_images').delete().eq('id', image.id);
+
+        if (deleteError) {
+          throw deleteError;
+        }
+
+        setProductImages((prev) => {
+          const nextImages = prev.filter((item) => item.id !== image.id);
+          setSelectedImageUrl((current) => {
+            if (current && image.url && current === image.url) {
+              const firstWithUrl = nextImages.find((item) => item.url)?.url ?? null;
+              return firstWithUrl;
+            }
+            return current;
+          });
+          return nextImages;
+        });
+      } catch (error) {
+        console.error('Error deleting product image:', error);
+        alert('Error al eliminar la imagen. Intenta nuevamente.');
+      } finally {
+        setDeletingImageIds((prev) => {
+          const next = new Set(prev);
+          next.delete(image.id);
+          return next;
+        });
+      }
+    },
+    [getStoragePathFromUrl]
+  );
 
   const loadCompatibilities = useCallback(async (page: number = 1) => {
     if (!sku) return;
@@ -297,8 +605,18 @@ export default function ProductDetailPage() {
       loadProductData();
       loadCompatibilities(1);
       loadCrossReferences();
+      loadProductImages();
     }
-  }, [sku, loadProductData, loadCompatibilities, loadCrossReferences]);
+  }, [sku, loadProductData, loadCompatibilities, loadCrossReferences, loadProductImages]);
+
+  useEffect(() => {
+    if (productImages.length > 0) {
+      const firstWithUrl = productImages.find((image) => image.url)?.url ?? null;
+      setSelectedImageUrl((prev) => (prev ? prev : firstWithUrl));
+    } else {
+      setSelectedImageUrl(null);
+    }
+  }, [productImages]);
 
   const handleEdit = () => {
     setIsEditModalOpen(true);
@@ -799,6 +1117,192 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Gallery Card */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <UploadCloud className="h-5 w-5 text-gray-500" />
+                  <h3 className="text-lg font-medium text-gray-900">Galería de Imágenes</h3>
+                </div>
+                <button
+                  onClick={handleBrowseFiles}
+                  className="text-sm px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Seleccionar imágenes
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileInputChange}
+              />
+
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                onClick={handleBrowseFiles}
+              >
+                <div className="flex flex-col items-center space-y-2 text-gray-600">
+                  <UploadCloud className="h-10 w-10 text-gray-400" />
+                  <p className="font-medium">Arrastra y suelta tus imágenes aquí</p>
+                  <p className="text-sm text-gray-500">
+                    o haz clic para seleccionar archivos desde tu equipo (formatos JPG, PNG, WEBP)
+                  </p>
+                </div>
+              </div>
+
+              {uploadQueue.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Cola de subida</h4>
+                  <div className="space-y-3">
+                    {uploadQueue.map((item) => (
+                      <div key={item.id} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                              {item.file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">{(item.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm">
+                            {item.status === 'uploading' && (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                <span className="text-blue-600">Subiendo...</span>
+                              </>
+                            )}
+                            {item.status === 'success' && (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <span className="text-green-600">Completado</span>
+                              </>
+                            )}
+                            {item.status === 'error' && (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-600" />
+                                <span className="text-red-600">Error</span>
+                              </>
+                            )}
+                            {item.status === 'pending' && (
+                              <span className="text-gray-500">En cola</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              item.status === 'error'
+                                ? 'bg-red-500'
+                                : item.status === 'success'
+                                ? 'bg-green-500'
+                                : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${Math.min(item.progress, 100)}%` }}
+                          ></div>
+                        </div>
+                        {item.status === 'error' && item.error && (
+                          <p className="mt-2 text-xs text-red-600">{item.error}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    Imágenes del producto
+                  </h4>
+                  {isLoadingImages && (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Cargando...
+                    </div>
+                  )}
+                </div>
+
+                {productImages.length === 0 && !isLoadingImages ? (
+                  <div className="border border-gray-200 rounded-lg p-6 text-center text-gray-500">
+                    <ImageIcon className="h-10 w-10 mx-auto text-gray-300 mb-3" />
+                    <p className="font-medium">Aún no has subido imágenes para este producto</p>
+                    <p className="text-sm text-gray-400 mt-1">Utiliza la zona de carga para agregar imágenes.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {productImages.map((image) => {
+                      const isDeleting = deletingImageIds.has(image.id);
+
+                      return (
+                        <div
+                          key={image.id}
+                          className="relative group border border-gray-200 rounded-lg overflow-hidden bg-gray-50"
+                        >
+                          <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              className="flex items-center justify-center rounded-full bg-white/90 p-1.5 text-gray-600 shadow-sm hover:text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (isDeleting) return;
+                                const confirmed = window.confirm('¿Deseas eliminar esta imagen?');
+                                if (!confirmed) return;
+                                handleDeleteImage(image);
+                              }}
+                              disabled={isDeleting}
+                              title="Eliminar imagen"
+                            >
+                              {isDeleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+
+                          {image.url ? (
+                            <Image
+                              src={image.url}
+                              alt={`Imagen del producto ${product.name}`}
+                              width={400}
+                              height={400}
+                              className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  'https://via.placeholder.com/400x400?text=Sin+Imagen';
+                              }}
+                              onClick={() => setSelectedImageUrl(image.url ?? null)}
+                            />
+                          ) : (
+                            <div
+                              className="w-full h-32 flex items-center justify-center"
+                              onClick={() => setSelectedImageUrl(null)}
+                            >
+                              <ImageIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Subida el{' '}
+                            {new Date(image.created_at).toLocaleDateString('es-MX', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Compatibilities Card */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1060,17 +1564,56 @@ export default function ProductDetailPage() {
             {/* Image Card */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Imagen</h3>
-              {product.image ? (
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover rounded-lg"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Sin+Imagen';
-                  }}
-                />
+              {selectedImageUrl || product.image ? (
+                <div className="space-y-3">
+                  <div className="w-full h-56 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                    <Image
+                      src={selectedImageUrl || product.image || 'https://via.placeholder.com/400x300?text=Sin+Imagen'}
+                      alt={product.name}
+                      width={600}
+                      height={400}
+                      className="w-full h-full object-contain bg-white"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'https://via.placeholder.com/400x300?text=Sin+Imagen';
+                      }}
+                    />
+                  </div>
+                  {productImages.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {productImages.map((image) => (
+                        <button
+                          key={image.id}
+                          type="button"
+                          className={`relative border rounded-md overflow-hidden h-20 flex items-center justify-center transition-all ${
+                            image.url && image.url === selectedImageUrl
+                              ? 'border-blue-500 ring-2 ring-blue-200'
+                              : 'border-gray-200 hover:border-blue-400'
+                          }`}
+                          onClick={() => setSelectedImageUrl(image.url ?? null)}
+                        >
+                          {image.url ? (
+                            <Image
+                              src={image.url}
+                              alt={`Miniatura ${product.name}`}
+                              width={160}
+                              height={160}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  'https://via.placeholder.com/160x160?text=Sin+Imagen';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                              <ImageIcon className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
                   <ImageIcon className="h-12 w-12 text-gray-400" />
